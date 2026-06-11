@@ -386,7 +386,8 @@
     var st = {
       type: isEdit ? tx.type : 'expense',
       category: isEdit ? tx.category : 'lebensmittel',
-      payerId: isEdit ? tx.payerId : 'p1'
+      payerId: isEdit ? tx.payerId : 'p1',
+      shared: isEdit ? !!tx.shared : false   // default: privat (zählt nicht in die Paar-Bilanz)
     };
 
     var content = App.el('div', '');
@@ -413,8 +414,7 @@
         var stillValid = list.some(function (c) { return c.key === st.category; });
         if (!stillValid) st.category = (st.type === 'income') ? 'gehalt' : 'lebensmittel';
         buildCatGrid();
-        sharedGroup.style.display = (st.type === 'income') ? 'none' : '';
-        if (!isEdit) sharedInput.checked = st.type !== 'income';
+        updateSharedLabel();
       });
       typeSegEls[d.key] = seg;
       segType.appendChild(seg);
@@ -496,22 +496,42 @@
     payerGroup.appendChild(segPayer);
     content.appendChild(payerGroup);
 
-    // --- shared switch (hidden for income) ---
+    // --- private / shared segmented (for both income and expense) ---
     var sharedGroup = App.el('div', 'form-group');
-    var sharedRow = App.el('div', 'form-row');
-    sharedRow.style.alignItems = 'center';
-    sharedRow.style.justifyContent = 'space-between';
-    sharedRow.appendChild(App.el('div', '', 'Gemeinsame Ausgabe'));
-    var switchLabel = App.el('label', 'switch');
-    var sharedInput = document.createElement('input');
-    sharedInput.type = 'checkbox';
-    sharedInput.checked = isEdit ? !!tx.shared : true;
-    switchLabel.appendChild(sharedInput);
-    switchLabel.appendChild(App.el('span', 'switch-track'));
-    sharedRow.appendChild(switchLabel);
-    sharedGroup.appendChild(sharedRow);
-    sharedGroup.style.display = (st.type === 'income') ? 'none' : '';
+    var sharedLabelEl = App.el('div', 'form-label', 'Zuordnung');
+    sharedGroup.appendChild(sharedLabelEl);
+    var segShared = App.el('div', 'segmented');
+    var sharedDefs = [
+      { val: false, label: 'Privat' },
+      { val: true, label: 'Gemeinsam' }
+    ];
+    var sharedSegEls = [];
+    sharedDefs.forEach(function (d) {
+      var seg = App.el('button', 'segment', d.label);
+      seg.type = 'button';
+      if (st.shared === d.val) seg.classList.add('active');
+      seg.addEventListener('click', function () {
+        st.shared = d.val;
+        sharedSegEls.forEach(function (el, i) {
+          el.classList.toggle('active', sharedDefs[i].val === st.shared);
+        });
+      });
+      sharedSegEls.push(seg);
+      segShared.appendChild(seg);
+    });
+    sharedGroup.appendChild(segShared);
+    var sharedHint = App.el('div', 'form-label', 'Nur „Gemeinsam“ zählt in die Paar-Bilanz.');
+    sharedHint.style.margin = '6px 0 0';
+    sharedGroup.appendChild(sharedHint);
     content.appendChild(sharedGroup);
+
+    // keeps the helper text in sync when the type toggles (purely cosmetic)
+    function updateSharedLabel() {
+      sharedHint.textContent = (st.type === 'income')
+        ? 'Gemeinsame Einnahmen werden in der Paar-Bilanz 50/50 geteilt.'
+        : 'Nur „Gemeinsam“ zählt in die Paar-Bilanz.';
+    }
+    updateSharedLabel();
 
     // --- note ---
     var noteGroup = App.el('div', 'form-group');
@@ -541,7 +561,7 @@
         note: noteInput.value.trim(),
         date: dateInput.value || App.todayISO(),
         payerId: st.payerId,
-        shared: !!sharedInput.checked
+        shared: st.shared
       };
       if (isEdit) {
         Store.updateTransaction(tx.id, data);

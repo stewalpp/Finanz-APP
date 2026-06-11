@@ -6,6 +6,12 @@ Versionsmarker für installierte PWAs.)
 
 ## 2026-06-11
 
+- **Paar-Bilanz zuverlässiger: klare Privat/Gemeinsam-Auswahl.** In Buchungs- und Fixkosten-Editor
+  ersetzt ein deutliches Segmented „Privat / Gemeinsam" den alten Schalter — jetzt auch für
+  **Einnahmen**. Standard ist **Privat**, damit private Buchungen die Bilanz nicht mehr versehentlich
+  verfälschen (vorher war „gemeinsam" voreingestellt). `coupleBalance` berücksichtigt zusätzlich
+  **gemeinsame Einnahmen** (50/50). Automatisch erkannte Fixkosten werden als „privat" angelegt.
+  (`transactions.js`, `recurring.js`, `analysis.js`; SW-Cache `v7`)
 - **Neuer Tab „Persönlich"** mit Steffen/Lisa-Umschalter: zeigt pro Person Gehalt & Einnahmen,
   eigene Fixkosten und private (nicht-gemeinsame) Ausgaben des Monats + „bleibt dir"-Überblick.
   Zeilen sind antippbar (öffnen den jeweiligen Editor). Tab-Leiste jetzt 6 Tabs.

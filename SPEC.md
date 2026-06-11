@@ -264,10 +264,13 @@ Analysis.trend(txs, nMonths, endMonthKey)
 // -> [{ month:'YYYY-MM', incomeCents, expenseCents }] oldest→newest, exactly nMonths entries, excl 'ausgleich'
 
 Analysis.coupleBalance(txs)
-// shared expenses (type 'expense', shared true, category!=='ausgleich'): paidShared per payer.
-// net = (paidShared.p1 - paidShared.p2) / 2            // net>0: p2 owes p1
-// for each tx with category==='ausgleich': payer 'p2' → net -= amount; payer 'p1' → net += amount
-// -> { paidSharedCents:{p1,p2}, owesCents: Math.abs(Math.round(net)), debtorId: net>0?'p2':net<0?'p1':null }
+// shared expenses (shared===true, type 'expense'): paidShared per payer.
+// shared income  (shared===true, type 'income'): receivedShared per payer (held jointly).
+// net = ((paidShared.p1 - paidShared.p2) - (recvShared.p1 - recvShared.p2)) / 2 + settle   // net>0: p2 owes p1
+// for each tx with category==='ausgleich': payer 'p2' → settle -= amount; payer 'p1' → settle += amount
+// Private entries (shared!==true) never affect the balance.
+// -> { paidSharedCents:{p1,p2}, receivedSharedCents:{p1,p2}, owesCents: Math.abs(Math.round(net)),
+//      debtorId: net>0?'p2':net<0?'p1':null }
 
 Analysis.fixedMonthlyCents(rules)
 // active expense rules: monthly + quarterly/3 + yearly/12, rounded -> int

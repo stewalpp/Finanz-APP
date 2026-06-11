@@ -140,7 +140,8 @@
   }
 
   function coupleBalance(txs) {
-    var paid = { p1: 0, p2: 0 };
+    var paid = { p1: 0, p2: 0 };      // shared expenses fronted
+    var recv = { p1: 0, p2: 0 };      // shared income received
     var settle = 0;
     var list = txs || [];
     for (var i = 0; i < list.length; i++) {
@@ -151,14 +152,19 @@
         // settlement transfer: payer pays the other partner
         if (tx.payerId === 'p2') settle -= amt;
         else if (tx.payerId === 'p1') settle += amt;
-      } else if (tx.type === 'expense' && tx.shared === true) {
+      } else if (tx.shared === true && tx.type === 'expense') {
         if (paid[tx.payerId] !== undefined) paid[tx.payerId] += amt;
+      } else if (tx.shared === true && tx.type === 'income') {
+        // shared income held by one partner: they owe the other half of the difference
+        if (recv[tx.payerId] !== undefined) recv[tx.payerId] += amt;
       }
     }
-    // net > 0: p2 owes p1
-    var net = (paid.p1 - paid.p2) / 2 + settle;
+    // net > 0: p2 owes p1. A shared expense fronted by p1 raises it; shared income
+    // received by p1 lowers it (p1 must pay out half of what they hold).
+    var net = ((paid.p1 - paid.p2) - (recv.p1 - recv.p2)) / 2 + settle;
     return {
       paidSharedCents: { p1: paid.p1, p2: paid.p2 },
+      receivedSharedCents: { p1: recv.p1, p2: recv.p2 },
       owesCents: Math.abs(Math.round(net)),
       debtorId: net > 0 ? 'p2' : net < 0 ? 'p1' : null
     };
