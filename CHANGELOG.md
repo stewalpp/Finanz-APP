@@ -6,6 +6,13 @@ Versionsmarker für installierte PWAs.)
 
 ## 2026-06-11
 
+- **Persönlich: wiederkehrende Ein-/Ausgaben direkt anlegen.** Eigene Abschnitte „Gehalt &
+  wiederkehrende Einnahmen" und „Fixkosten (wiederkehrend)" mit ↻-Markierung und „+ Hinzufügen"-Buttons,
+  die den Regel-Editor passend vorbelegt öffnen (Einnahme/Ausgabe + Person). Einmal angelegt,
+  erscheinen sie automatisch jeden Monat. `Analysis.personalSummary` rechnet Einnahmen jetzt aus den
+  wiederkehrenden Einnahme-Regeln (Gehalt) + Einmal-Einnahmen; Buchungen einer von einer Regel
+  abgedeckten Kategorie werden nicht doppelt gezählt. `Views.recurring.openEditor(rule, {type,payerId})`
+  akzeptiert Vorgaben. (`personal.js`, `recurring.js`, `analysis.js`; SW-Cache `v10`)
 - **Dashboard übersichtlicher + Visualisierung pro Person & gemeinsam.** Übersicht führt jetzt mit
   einer Hero-Karte „Zusammen frei verfügbar" (kombinierte Summe) und zwei farbigen Balken pro Person
   (Steffen/Gisa). Reihenfolge gestrafft (Hero → Stats → Donut → Bilanz → Fixkosten → Letzte).

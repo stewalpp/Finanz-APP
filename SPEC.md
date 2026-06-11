@@ -294,9 +294,12 @@ Analysis.availableBudget(txs, rules, monthKey)
 //      byPerson: { p1:{...same...}, p2:{...same...} } }   // shared rules/txs split 50/50, else to payer
 
 Analysis.personalSummary(txs, rules, personId, monthKey)
-// Per-person view: that person's income (txs payerId===personId, type income),
-// their own fixed costs (active expense rules where payerId===personId, full monthly-equivalent),
-// and their PRIVATE (shared!==true) expenses for the month. 'ausgleich' excluded.
+// Per-person view, recurring-centric:
+// incomeCents  = monthly-equiv of that person's active INCOME rules (Gehalt) + their one-off income txs
+// fixedCents   = monthly-equiv of that person's active EXPENSE rules
+// privateExpenseCents = their non-shared, one-off (non-rule) expense txs of the month
+// One-off txs whose (type,category) is already covered by one of the person's active rules are
+// skipped (no double count with the recurring rule); 'ausgleich' excluded.
 // -> { incomeCents, fixedCents, privateExpenseCents, leftoverCents }  (leftover = income − fixed − private)
 
 Analysis.detectRecurring(txs, rules, dismissedKeys)

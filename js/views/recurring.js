@@ -271,14 +271,17 @@
 
   // ---------------------------------------------------------------- editor
 
-  function openEditor(rule) {
+  // defaults (optional): { type, payerId } to preset a NEW rule (used by the Persönlich tab)
+  function openEditor(rule, defaults) {
     var isEdit = !!rule;
+    defaults = defaults || {};
     var members = getMembers();
+    var defType = defaults.type === 'income' ? 'income' : 'expense';
     var st = {
-      type: isEdit ? rule.type : 'expense',
-      category: isEdit ? rule.category : 'wohnen',
+      type: isEdit ? rule.type : defType,
+      category: isEdit ? rule.category : (defType === 'income' ? 'gehalt' : 'wohnen'),
       interval: isEdit ? rule.interval : 'monthly',
-      payerId: isEdit ? rule.payerId : 'p1',
+      payerId: isEdit ? rule.payerId : (defaults.payerId || 'p1'),
       shared: isEdit ? !!rule.shared : false   // default: privat (zählt nicht in die Paar-Bilanz)
     };
 
@@ -558,7 +561,9 @@
     }
 
     App.showSheet({
-      title: isEdit ? 'Fixkosten bearbeiten' : 'Neue Fixkosten',
+      title: isEdit
+        ? (rule.type === 'income' ? 'Einnahme bearbeiten' : 'Fixkosten bearbeiten')
+        : (st.type === 'income' ? 'Wiederkehrende Einnahme' : 'Neue Fixkosten'),
       content: content
     });
 

@@ -177,10 +177,12 @@
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', rule.name || cat.label));
-    main.appendChild(App.el('div', 'row-sub', cat.label + ' · ' + word));
+    main.appendChild(App.el('div', 'row-sub', '↻ ' + word + ' · ' + cat.label));
 
     var trailing = App.el('div', 'row-trailing');
-    trailing.appendChild(App.el('span', 'amount-neg', '−' + App.fmtEUR(rule.amountCents)));
+    var isIncome = rule.type === 'income';
+    trailing.appendChild(App.el('span', isIncome ? 'amount-pos' : 'amount-neg',
+      (isIncome ? '+' : '−') + App.fmtEUR(rule.amountCents)));
 
     row.appendChild(icon);
     row.appendChild(main);
@@ -191,18 +193,32 @@
     return row;
   }
 
-  function listCard(title, rows, emptyText) {
+  function sectionCard(title, rows, emptyText, addBtn) {
     var card = App.el('div', 'card');
     card.appendChild(App.el('div', 'card-title', title));
-    if (!rows.length) {
+    if (rows.length) {
+      var group = App.el('div', 'list-group');
+      group.style.boxShadow = 'none';
+      rows.forEach(function (r) { group.appendChild(r); });
+      card.appendChild(group);
+    } else {
       card.appendChild(emptyState(emptyText));
-      return card;
     }
-    var group = App.el('div', 'list-group');
-    group.style.boxShadow = 'none';
-    rows.forEach(function (r) { group.appendChild(r); });
-    card.appendChild(group);
+    if (addBtn) card.appendChild(addBtn);
     return card;
+  }
+
+  // a button that opens the recurring editor preset for this person + type
+  function addRecurringBtn(label, type) {
+    var btn = App.el('button', 'btn btn-secondary', label);
+    btn.type = 'button';
+    btn.style.marginTop = '12px';
+    btn.addEventListener('click', function () {
+      if (Views.recurring && Views.recurring.openEditor) {
+        Views.recurring.openEditor(null, { type: type, payerId: selectedPerson });
+      }
+    });
+    return btn;
   }
 
   function render(root) {
@@ -219,32 +235,41 @@
     view.appendChild(buildMonthNav());
     view.appendChild(buildSummaryCard(sum));
 
-    // Gehalt & Einnahmen — actual income bookings of this person this month
-    var incomeRows = txs
+    // Gehalt & wiederkehrende Einnahmen — recurring income rules (auto every month)
+    // plus any one-off income bookings this month
+    var incomeRuleRows = rules
+      .filter(function (r) {
+        return r.active && r.type === 'income' && r.payerId === selectedPerson;
+      })
+      .map(ruleRow);
+    var oneOffIncomeRows = txs
       .filter(function (t) {
-        return t.payerId === selectedPerson && t.type === 'income' &&
+        return t.payerId === selectedPerson && t.type === 'income' && !t.recurringId &&
           t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
       })
       .map(txRow);
-    view.appendChild(listCard('Gehalt & Einnahmen', incomeRows,
-      'In diesem Monat noch keine Einnahmen erfasst.'));
+    view.appendChild(sectionCard('Gehalt & wiederkehrende Einnahmen',
+      incomeRuleRows.concat(oneOffIncomeRows),
+      'Lege z. B. dein Gehalt als wiederkehrende Einnahme an – es erscheint dann jeden Monat automatisch.',
+      addRecurringBtn('+ Wiederkehrende Einnahme', 'income')));
 
-    // Deine Fixkosten — active expense rules of this person
+    // Fixkosten — active expense rules of this person (recurring)
     var ruleRows = rules
       .filter(function (r) {
         return r.active && r.type === 'expense' && r.payerId === selectedPerson;
       })
       .map(ruleRow);
-    view.appendChild(listCard('Fixkosten', ruleRows,
-      'Noch keine Fixkosten auf ' + personName(selectedPerson) + ' angelegt.'));
+    view.appendChild(sectionCard('Fixkosten (wiederkehrend)', ruleRows,
+      'Noch keine Fixkosten auf ' + personName(selectedPerson) + '. Wiederkehrende Ausgaben hier anlegen.',
+      addRecurringBtn('+ Fixkosten anlegen', 'expense')));
 
-    // Private Ausgaben — non-shared expenses of this person this month
+    // Private Ausgaben — one-off, non-shared, non-recurring expenses this month
     var privTxs = txs.filter(function (t) {
       return t.payerId === selectedPerson && t.type === 'expense' && t.shared !== true &&
-        t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
+        !t.recurringId && t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
     });
     var privRows = privTxs.map(txRow);
-    var privCard = listCard('Private Ausgaben', privRows,
+    var privCard = sectionCard('Private Ausgaben', privRows,
       'In diesem Monat keine privaten Ausgaben.');
     if (privTxs.length) {
       var footer = App.el('p', 'row-sub',
