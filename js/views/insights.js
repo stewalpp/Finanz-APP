@@ -227,6 +227,153 @@
   }
 
   // ---------------------------------------------------------------------------
+  // 5. Savings trend (cumulative) — "Sparverlauf"
+  // ---------------------------------------------------------------------------
+  function buildSavingsTrendCard(txs, currentMonth) {
+    const card = App.el('div', 'card');
+    card.appendChild(App.el('div', 'card-title', 'Sparverlauf · 6 Monate'));
+
+    const data = Analysis.cumulativeSavings(txs, 6, currentMonth);
+    const total = data.length ? data[data.length - 1].cumulativeCents : 0;
+
+    const big = App.el('div', 'hero-amount', App.fmtEUR(total));
+    big.style.color = total >= 0 ? 'var(--green)' : 'var(--red)';
+    card.appendChild(big);
+    card.appendChild(App.el('div', 'hero-sub',
+      'in den letzten 6 Monaten gespart (Einnahmen − Ausgaben)'));
+
+    const wrap = App.el('div');
+    wrap.style.marginTop = '10px';
+    const points = data.map(function (d) { return { label: monthShortLabel(d.month), value: d.cumulativeCents }; });
+    Charts.line(wrap, points, { height: 170, color: GREEN, formatValue: fmtAxisValue });
+    card.appendChild(wrap);
+    return card;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 6. Key metrics grid
+  // ---------------------------------------------------------------------------
+  function metric(label, value, tone) {
+    const s = App.el('div', 'stat');
+    s.appendChild(App.el('div', 'stat-label', label));
+    s.appendChild(App.el('div', 'stat-value' + (tone ? ' ' + tone : ''), value));
+    return s;
+  }
+
+  function buildMetricsCard(txs, rules, currentMonth) {
+    const card = App.el('div', 'card');
+    card.appendChild(App.el('div', 'card-title', 'Kennzahlen'));
+
+    const m = Analysis.keyMetrics(txs, rules, currentMonth);
+    const grid = App.el('div');
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = '1fr 1fr';
+    grid.style.gap = '10px';
+    grid.appendChild(metric('Ø Ausgaben / Monat', App.fmtEUR(m.avgExpenseCents)));
+    grid.appendChild(metric('Ø Sparquote', m.avgSavingsRate + ' %', m.avgSavingsRate >= 0 ? 'pos' : 'neg'));
+    grid.appendChild(metric('Fixkostenquote', m.fixedSharePct + ' %'));
+    grid.appendChild(metric('Größte Ausgabe', m.biggest ? App.fmtEUR(m.biggest.amountCents) : '–'));
+    card.appendChild(grid);
+
+    if (m.biggest) {
+      const cat = App.cat(m.biggest.category);
+      const sub = App.el('div', 'row-sub',
+        'Größte Ausgabe: ' + (m.biggest.note || cat.label) + ' · ' + cat.label);
+      sub.style.marginTop = '10px';
+      card.appendChild(sub);
+    }
+    return card;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 7. Shared vs. private split
+  // ---------------------------------------------------------------------------
+  function svRow(color, label, cents, pct) {
+    const row = App.el('div', 'legend-row');
+    const dot = App.el('span', 'dot');
+    dot.style.background = color;
+    row.appendChild(dot);
+    const l = App.el('span', '', label);
+    l.style.flex = '1';
+    row.appendChild(l);
+    row.appendChild(App.el('span', '', App.fmtEUR(cents)));
+    const p = App.el('span', '', pct + ' %');
+    p.style.color = 'var(--text-2)';
+    p.style.minWidth = '42px';
+    p.style.textAlign = 'right';
+    row.appendChild(p);
+    return row;
+  }
+
+  function buildSharedPrivateCard(txs, currentMonth) {
+    const sv = Analysis.sharedVsPrivate(txs, currentMonth);
+    const total = sv.sharedCents + sv.privateCents;
+    const card = App.el('div', 'card');
+    card.appendChild(App.el('div', 'card-title', 'Gemeinsam vs. privat'));
+
+    if (total <= 0) {
+      card.appendChild(emptyState('⚖️', 'Noch keine Ausgaben in diesem Monat.'));
+      return card;
+    }
+
+    const sharedPct = Math.round((sv.sharedCents / total) * 100);
+    const bar = App.el('div');
+    bar.style.display = 'flex';
+    bar.style.height = '14px';
+    bar.style.borderRadius = '100px';
+    bar.style.overflow = 'hidden';
+    bar.style.background = 'var(--bg-input)';
+    bar.style.margin = '2px 0 12px';
+    const segS = App.el('div');
+    segS.style.width = (sv.sharedCents / total * 100) + '%';
+    segS.style.background = 'var(--tint)';
+    const segP = App.el('div');
+    segP.style.width = (sv.privateCents / total * 100) + '%';
+    segP.style.background = 'var(--teal)';
+    bar.appendChild(segS);
+    bar.appendChild(segP);
+    card.appendChild(bar);
+
+    card.appendChild(svRow('var(--tint)', 'Gemeinsam', sv.sharedCents, sharedPct));
+    card.appendChild(svRow('var(--teal)', 'Privat', sv.privateCents, 100 - sharedPct));
+    return card;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 8. Top expenses of the month
+  // ---------------------------------------------------------------------------
+  function buildTopExpensesCard(txs, currentMonth) {
+    const card = App.el('div', 'card');
+    card.appendChild(App.el('div', 'card-title', 'Top-Ausgaben diesen Monat'));
+
+    const top = Analysis.topExpenses(txs, currentMonth, 5);
+    if (!top.length) {
+      card.appendChild(emptyState('💸', 'Noch keine Ausgaben in diesem Monat.'));
+      return card;
+    }
+
+    const group = App.el('div', 'list-group');
+    group.style.boxShadow = 'none';
+    top.forEach(function (tx) {
+      const cat = App.cat(tx.category);
+      const row = App.el('div', 'list-row');
+      const icon = App.el('div', 'cat-icon', cat.emoji);
+      icon.style.background = cat.color + '2E';
+      const main = App.el('div', 'row-main');
+      main.appendChild(App.el('div', 'row-title', tx.note || cat.label));
+      main.appendChild(App.el('div', 'row-sub', cat.label + ' · ' + App.fmtDate(tx.date)));
+      const trailing = App.el('div', 'row-trailing');
+      trailing.appendChild(App.el('span', 'amount-neg', '−' + App.fmtEUR(tx.amountCents)));
+      row.appendChild(icon);
+      row.appendChild(main);
+      row.appendChild(trailing);
+      group.appendChild(row);
+    });
+    card.appendChild(group);
+    return card;
+  }
+
+  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
   function render(root) {
@@ -247,8 +394,12 @@
       return;
     }
 
+    view.appendChild(buildSavingsTrendCard(txs, currentMonth));
     view.appendChild(buildTrendCard(txs, currentMonth));
+    view.appendChild(buildMetricsCard(txs, rules, currentMonth));
     view.appendChild(buildSavingsCard(txs, currentMonth));
+    view.appendChild(buildSharedPrivateCard(txs, currentMonth));
+    view.appendChild(buildTopExpensesCard(txs, currentMonth));
     view.appendChild(buildTipsCard(txs, rules));
     view.appendChild(buildCompareCard(txs, currentMonth));
 

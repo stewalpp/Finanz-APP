@@ -6,6 +6,14 @@ Versionsmarker für installierte PWAs.)
 
 ## 2026-06-11
 
+- **Analyse stark überarbeitet.** Neu: **Sparverlauf** (kumulatives Erspartes als Flächen-/Linien-Chart,
+  `Charts.line`), **Kennzahlen** (Ø Ausgaben/Monat, Ø Sparquote, Fixkostenquote, größte Ausgabe),
+  **Gemeinsam vs. privat** (gestapelter Balken) und **Top-Ausgaben des Monats** — zusätzlich zu
+  Einnahmen/Ausgaben-Trend, Sparquote, Spartipps und Kategorien-Vergleich. Neue Analyse-Funktionen:
+  `cumulativeSavings`, `keyMetrics`, `topExpenses`, `sharedVsPrivate`. (`insights.js`, `analysis.js`, `charts.js`)
+- **Einnahmen: korrekte Beschriftung.** Im Editor heißt das Personenfeld bei Einnahmen „Empfänger"
+  statt „Bezahlt von" (Geld kommt rein, wird nicht gezahlt). (`transactions.js`, `recurring.js`)
+  SW-Cache `v13`.
 - **Fixkosten-Tab entfernt (zusammengeführt) → 5 Tabs.** Wiederkehrende Kosten verwaltet man jetzt
   pro Person im Tab „Persönlich"; die automatische Erkennung wiederkehrender Kosten wandert als Karte
   ins Dashboard; der Kalender-Export liegt weiterhin unter „Mehr". Tabs jetzt: Übersicht · Persönlich ·

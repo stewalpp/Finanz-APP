@@ -336,6 +336,7 @@
         if (!stillValid) st.category = (st.type === 'income') ? 'gehalt' : 'wohnen';
         buildCatGrid();
         updateSharedHint();
+        payerLabel.textContent = (st.type === 'income') ? 'Empfänger' : 'Bezahlt von';
       });
       typeSegEls[d.key] = seg;
       segType.appendChild(seg);
@@ -449,7 +450,8 @@
 
     // --- payer segmented ---
     var payerGroup = App.el('div', 'form-group');
-    payerGroup.appendChild(App.el('div', 'form-label', 'Bezahlt von'));
+    var payerLabel = App.el('div', 'form-label', st.type === 'income' ? 'Empfänger' : 'Bezahlt von');
+    payerGroup.appendChild(payerLabel);
     var segPayer = App.el('div', 'segmented');
     var payerSegEls = {};
     members.forEach(function (m) {

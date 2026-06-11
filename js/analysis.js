@@ -373,6 +373,64 @@
     };
   }
 
+  // Running total of monthly savings (income − expense) over the window → "Sparverlauf".
+  function cumulativeSavings(txs, nMonths, endMonthKey) {
+    var t = trend(txs, nMonths, endMonthKey);
+    var run = 0;
+    return t.map(function (m) {
+      var saved = m.incomeCents - m.expenseCents;
+      run += saved;
+      return { month: m.month, savedCents: saved, cumulativeCents: run };
+    });
+  }
+
+  // Headline analytics figures.
+  function keyMetrics(txs, rules, monthKey) {
+    var n = 6;
+    var t = trend(txs, n, monthKey);
+    var totalExp = 0, rateSum = 0, rateCount = 0;
+    t.forEach(function (m) {
+      totalExp += m.expenseCents;
+      if (m.incomeCents > 0) {
+        rateSum += (m.incomeCents - m.expenseCents) / m.incomeCents;
+        rateCount += 1;
+      }
+    });
+    var sum = monthlySummary(txs, monthKey);
+    var fixed = fixedMonthlyCents(rules);
+    var biggest = null;
+    (txs || []).forEach(function (tx) {
+      if (!tx || tx.type !== 'expense' || tx.category === 'ausgleich' || !inMonth(tx, monthKey)) return;
+      if (!biggest || cents(tx.amountCents) > cents(biggest.amountCents)) biggest = tx;
+    });
+    return {
+      avgExpenseCents: Math.round(totalExp / n),
+      avgSavingsRate: rateCount ? Math.round((rateSum / rateCount) * 100) : 0,
+      fixedSharePct: sum.incomeCents > 0 ? Math.round((fixed / sum.incomeCents) * 100) : 0,
+      biggest: biggest
+    };
+  }
+
+  // Largest single expenses of the month.
+  function topExpenses(txs, monthKey, n) {
+    var list = (txs || []).filter(function (tx) {
+      return tx && tx.type === 'expense' && tx.category !== 'ausgleich' && inMonth(tx, monthKey);
+    }).slice();
+    list.sort(function (a, b) { return cents(b.amountCents) - cents(a.amountCents); });
+    return list.slice(0, n || 5);
+  }
+
+  // Split of the month's expenses into shared vs private.
+  function sharedVsPrivate(txs, monthKey) {
+    var shared = 0, priv = 0;
+    (txs || []).forEach(function (tx) {
+      if (!tx || tx.type !== 'expense' || tx.category === 'ausgleich' || !inMonth(tx, monthKey)) return;
+      if (tx.shared === true) shared += cents(tx.amountCents);
+      else priv += cents(tx.amountCents);
+    });
+    return { sharedCents: shared, privateCents: priv };
+  }
+
   function detectRecurring(txs, rules, dismissedKeys) {
     var dismissed = new Set(Array.isArray(dismissedKeys) ? dismissedKeys : []);
     var groups = new Map();
@@ -747,6 +805,10 @@
     upcomingForMonth: upcomingForMonth,
     availableBudget: availableBudget,
     personalSummary: personalSummary,
+    cumulativeSavings: cumulativeSavings,
+    keyMetrics: keyMetrics,
+    topExpenses: topExpenses,
+    sharedVsPrivate: sharedVsPrivate,
     detectRecurring: detectRecurring,
     tips: tips,
     icsForRules: icsForRules

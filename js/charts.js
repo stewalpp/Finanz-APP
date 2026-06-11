@@ -301,8 +301,95 @@
     return true;
   }
 
+  // ---------------------------------------------------------------------------
+  // Line / area chart (e.g. cumulative savings)
+  // points: [{label, value}] (value = cents). opts: {height=170, color, formatValue}
+  // ---------------------------------------------------------------------------
+  let gradSeq = 0;
+
+  function line(containerEl, points, opts) {
+    containerEl.innerHTML = '';
+    if (!points || points.length < 2) return false;
+    opts = opts || {};
+    ensureStyles();
+
+    const H = opts.height || 170;
+    const color = opts.color || 'var(--tint, #0A84FF)';
+    const formatValue = typeof opts.formatValue === 'function' ? opts.formatValue : function (v) { return String(v); };
+    const W = 360;
+    const padTop = 14, padBottom = 22, padLeft = 10, padRight = 46;
+    const plotW = W - padLeft - padRight;
+    const plotH = H - padTop - padBottom;
+    const y0 = padTop + plotH;
+
+    const vals = points.map(function (p) { return p.value; });
+    const dataMax = Math.max.apply(null, vals);
+    const dataMin = Math.min.apply(null, vals);
+    const yMin = Math.min(0, dataMin);
+    const yMax = dataMax > yMin ? dataMax : yMin + 1;
+
+    function px(i) { return padLeft + (i / (points.length - 1)) * plotW; }
+    function py(v) { return y0 - ((v - yMin) / (yMax - yMin)) * plotH; }
+
+    const gid = 'cf-area-' + (++gradSeq);
+    const svg = svgEl('svg', { class: 'cf-line', viewBox: '0 0 ' + W + ' ' + H, 'aria-hidden': 'true' });
+
+    const defs = svgEl('defs', {});
+    const grad = svgEl('linearGradient', { id: gid, x1: '0', y1: '0', x2: '0', y2: '1' });
+    grad.appendChild(svgEl('stop', { offset: '0', 'stop-color': color, 'stop-opacity': '0.30' }));
+    grad.appendChild(svgEl('stop', { offset: '1', 'stop-color': color, 'stop-opacity': '0' }));
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+
+    // gridlines + value captions
+    for (let k = 0; k <= 3; k++) {
+      const gv = yMin + (k / 3) * (yMax - yMin);
+      const gy = num(py(gv));
+      svg.appendChild(svgEl('line', {
+        x1: padLeft, y1: gy, x2: W - padRight, y2: gy,
+        stroke: 'var(--sep, rgba(60,60,67,.18))', 'stroke-width': '1'
+      }));
+      const cap = svgEl('text', {
+        x: W - 2, y: gy + 3, 'text-anchor': 'end', 'font-size': '9', fill: 'var(--text-3, #8E8E93)'
+      });
+      cap.textContent = String(formatValue(gv));
+      svg.appendChild(cap);
+    }
+
+    let d = '';
+    points.forEach(function (p, i) { d += (i === 0 ? 'M' : 'L') + num(px(i)) + ' ' + num(py(p.value)); });
+
+    // area fill
+    const area = d + ' L' + num(px(points.length - 1)) + ' ' + num(y0) + ' L' + num(px(0)) + ' ' + num(y0) + ' Z';
+    svg.appendChild(svgEl('path', { d: area, fill: 'url(#' + gid + ')', stroke: 'none' }));
+
+    // line
+    svg.appendChild(svgEl('path', {
+      class: 'cf-line-path', d: d, fill: 'none', stroke: color,
+      'stroke-width': '2.5', 'stroke-linejoin': 'round', 'stroke-linecap': 'round'
+    }));
+
+    // points + x labels
+    points.forEach(function (p, i) {
+      const last = i === points.length - 1;
+      svg.appendChild(svgEl('circle', {
+        cx: num(px(i)), cy: num(py(p.value)), r: last ? 4 : 2.5,
+        fill: last ? color : 'var(--bg-card, #fff)', stroke: color, 'stroke-width': last ? 0 : 1.5
+      }));
+      const lbl = svgEl('text', {
+        x: num(px(i)), y: H - 6, 'text-anchor': 'middle', 'font-size': '10', fill: 'var(--text-2, #8E8E93)'
+      });
+      lbl.textContent = p.label;
+      svg.appendChild(lbl);
+    });
+
+    containerEl.appendChild(svg);
+    return true;
+  }
+
   window.Charts = {
     donut: donut,
-    bars: bars
+    bars: bars,
+    line: line
   };
 })();

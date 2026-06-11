@@ -104,9 +104,10 @@ nie auf Top-Level.
 
 **`window.Analysis`** (analysis.js) — reine Funktionen:
 `monthlySummary`, `trend`, `coupleBalance`, `fixedMonthlyCents`, `upcomingForMonth`,
-`availableBudget`, `personalSummary`, `detectRecurring`, `tips`, `icsForRules`.
+`availableBudget`, `personalSummary`, `cumulativeSavings`, `keyMetrics`, `topExpenses`,
+`sharedVsPrivate`, `detectRecurring`, `tips`, `icsForRules`.
 
-**`window.Charts`** (charts.js): `donut(el,items,opts)`, `bars(el,data,opts)`.
+**`window.Charts`** (charts.js): `donut(el,items,opts)`, `bars(el,data,opts)`, `line(el,points,opts)` (Flächen-/Linien-Chart, z. B. Sparverlauf).
 
 **`window.Views`** (jede View): `{ title, render(containerEl), headerAction?() }`.
 `Views.transactions.openEditor(txOrNull)` und `Views.recurring.openEditor(ruleOrNull)` sind die
