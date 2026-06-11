@@ -1505,13 +1505,19 @@ textarea.input {
 
 .swipe-action {
   opacity: 0;
+  visibility: hidden;
+  display: none;
+  background: transparent !important;
   pointer-events: none;
   transition: opacity 0.16s ease;
 }
 
 .swipe-cell.dragging .swipe-action,
 .swipe-cell.open .swipe-action {
+  display: flex;
+  visibility: visible;
   opacity: 1;
+  background: var(--red) !important;
   pointer-events: auto;
 }
 
