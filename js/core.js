@@ -212,6 +212,7 @@
     geschenke:    { label: 'Geschenke',             emoji: '🎁',  color: '#FF6482', type: 'expense' },
     haushalt:     { label: 'Haushalt & Möbel',      emoji: '🛋️', color: '#98989D', type: 'expense' },
     sparen:       { label: 'Sparen & Anlegen',      emoji: '🏦',  color: '#00C7BE', type: 'expense' },
+    kredite:      { label: 'Kredite',               emoji: '💳',  color: '#C76E5A', type: 'expense' },
     ausgleich:    { label: 'Ausgleich',             emoji: '🤝',  color: '#8E8E93', type: 'expense' },
     sonstiges:    { label: 'Sonstiges',             emoji: '📦',  color: '#8E8E93', type: 'expense' }
   };
