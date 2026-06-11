@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (zwölfter Wurf)
+
+- **Buchungen als reine Monatsliste.** Der Tab zeigt jetzt immer alle echten Buchungen des
+  Monats, egal ob gemeinsam oder privat. Die frühere Umschaltung „Gemeinsamer Topf / Alle
+  Buchungen", offene Fixkosten-Regeln, Buchen-Buttons, Swipe-Löschen und Bearbeiten per
+  Antippen sind aus diesem Tab entfernt. Der Plus-Button ist im Buchungen-Tab ausgeblendet.
+  SW-Cache `v26`.
+
 ## 2026-06-11 (elfter Wurf)
 
 - **Dashboard auf drei Bereiche reduziert.** Die Übersicht zeigt nur noch „Zusammen frei

@@ -15,7 +15,7 @@
   App.currentTab = 'dashboard';
 
   // Updates tab-bar active state, #page-title, #header-actions and
-  // renders Views[tabKey] into #view-root. FAB is hidden on 'settings'.
+  // renders Views[tabKey] into #view-root. FAB is hidden on read-only tabs.
   App.switchTab = function (tabKey) {
     var view = window.Views && window.Views[tabKey];
     if (!view || typeof view.render !== 'function') {
@@ -53,7 +53,7 @@
 
     // FAB only makes sense where bookings are created
     var fab = document.getElementById('fab');
-    if (fab) fab.classList.toggle('hidden', tabKey === 'settings');
+    if (fab) fab.classList.toggle('hidden', tabKey === 'settings' || tabKey === 'transactions');
 
     // render the view
     var root = document.getElementById('view-root');
