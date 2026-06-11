@@ -65,6 +65,7 @@ js/store.js           window.Store: zentrale Datenhaltung. Dual-Modus lokal (loc
 js/views/dashboard.js     Views.dashboard   — „Übersicht"
 js/views/transactions.js  Views.transactions — „Buchungen" (+ openEditor; Swipe-to-Delete)
 js/views/recurring.js     Views.recurring   — „Fixkosten" (+ openEditor)
+js/views/personal.js      Views.personal    — „Persönlich" (pro Person, mit Steffen/Lisa-Umschalter)
 js/views/insights.js      Views.insights    — „Analyse"
 js/views/settings.js      Views.settings    — „Mehr"/Einstellungen
 js/app.js             Boot-Datei (ZULETZT geladen): App.switchTab/rerender, Tab-Bar/FAB-Verdrahtung,
@@ -99,7 +100,7 @@ nie auf Top-Level.
 
 **`window.Analysis`** (analysis.js) — reine Funktionen:
 `monthlySummary`, `trend`, `coupleBalance`, `fixedMonthlyCents`, `upcomingForMonth`,
-`availableBudget`, `detectRecurring`, `tips`, `icsForRules`.
+`availableBudget`, `personalSummary`, `detectRecurring`, `tips`, `icsForRules`.
 
 **`window.Charts`** (charts.js): `donut(el,items,opts)`, `bars(el,data,opts)`.
 
@@ -156,6 +157,9 @@ Diagrammen und Tipps **ausgenommen** — nur `Analysis.coupleBalance` nutzt sie.
 ## 10. Funktionsstand & Erweiterungen seit SPEC.md
 
 Über die ursprüngliche `SPEC.md` hinaus bereits umgesetzt (siehe `CHANGELOG.md`):
+- Tab **„Persönlich"** (`personal.js`) mit Steffen/Lisa-Umschalter: Gehalt, eigene Fixkosten,
+  private Ausgaben pro Person; `Analysis.personalSummary()`. Tab-Leiste = 6 Tabs.
+- Neue Kategorie **„Kredite"** (`kredite`).
 - `Analysis.availableBudget()` + „Frei verfügbar diesen Monat"-Karte (Übersicht & Fixkosten), pro Person.
 - Manueller Hell-/Dunkel-Umschalter (*Mehr → Darstellung*; `App.getTheme/setTheme`, `cf.theme`).
 - Wischen-nach-links-zum-Löschen bei Buchungen (`makeSwipeable` in `transactions.js`).

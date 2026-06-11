@@ -199,6 +199,7 @@ urlaub:        Urlaub & Reisen        ✈️  #40C8E0  expense
 geschenke:     Geschenke              🎁  #FF6482  expense
 haushalt:      Haushalt & Möbel       🛋️  #98989D  expense
 sparen:        Sparen & Anlegen       🏦  #00C7BE  expense
+kredite:       Kredite                💳  #C76E5A  expense
 ausgleich:     Ausgleich              🤝  #8E8E93  expense   (special, hidden from pickers)
 sonstiges:     Sonstiges              📦  #8E8E93  expense
 ```
@@ -288,6 +289,12 @@ Analysis.availableBudget(txs, rules, monthKey)
 // available     = plannedIncome − fixed − variableSpent
 // -> { total: {plannedIncomeCents, fixedCents, variableSpentCents, availableCents},
 //      byPerson: { p1:{...same...}, p2:{...same...} } }   // shared rules/txs split 50/50, else to payer
+
+Analysis.personalSummary(txs, rules, personId, monthKey)
+// Per-person view: that person's income (txs payerId===personId, type income),
+// their own fixed costs (active expense rules where payerId===personId, full monthly-equivalent),
+// and their PRIVATE (shared!==true) expenses for the month. 'ausgleich' excluded.
+// -> { incomeCents, fixedCents, privateExpenseCents, leftoverCents }  (leftover = income − fixed − private)
 
 Analysis.detectRecurring(txs, rules, dismissedKeys)
 // candidates: expense txs without recurringId. Group by normalized note (lowercase, trim, collapse

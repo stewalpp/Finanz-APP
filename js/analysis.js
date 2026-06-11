@@ -311,6 +311,42 @@
     };
   }
 
+  // Per-person view ("Persönlich"): that person's income, their own fixed costs (rules where
+  // payerId === personId, full monthly-equivalent), and their PRIVATE (non-shared) expenses
+  // for the month. 'ausgleich' is ignored. leftover = income − fixed − private.
+  function personalSummary(txs, rules, personId, monthKey) {
+    var incomeCents = 0;
+    var privateExpenseCents = 0;
+    var list = txs || [];
+    for (var i = 0; i < list.length; i++) {
+      var tx = list[i];
+      if (!tx || tx.payerId !== personId || tx.category === 'ausgleich') continue;
+      if (!inMonth(tx, monthKey)) continue;
+      var amt = cents(tx.amountCents);
+      if (tx.type === 'income') incomeCents += amt;
+      else if (tx.type === 'expense' && tx.shared !== true) privateExpenseCents += amt;
+    }
+
+    var fixed = 0;
+    var rl = rules || [];
+    for (var j = 0; j < rl.length; j++) {
+      var r = rl[j];
+      if (!r || !r.active || r.type !== 'expense' || r.payerId !== personId) continue;
+      var ramt = cents(r.amountCents);
+      if (r.interval === 'monthly') fixed += ramt;
+      else if (r.interval === 'quarterly') fixed += ramt / 3;
+      else if (r.interval === 'yearly') fixed += ramt / 12;
+    }
+    fixed = Math.round(fixed);
+
+    return {
+      incomeCents: incomeCents,
+      fixedCents: fixed,
+      privateExpenseCents: privateExpenseCents,
+      leftoverCents: incomeCents - fixed - privateExpenseCents
+    };
+  }
+
   function detectRecurring(txs, rules, dismissedKeys) {
     var dismissed = new Set(Array.isArray(dismissedKeys) ? dismissedKeys : []);
     var groups = new Map();
@@ -684,6 +720,7 @@
     fixedMonthlyCents: fixedMonthlyCents,
     upcomingForMonth: upcomingForMonth,
     availableBudget: availableBudget,
+    personalSummary: personalSummary,
     detectRecurring: detectRecurring,
     tips: tips,
     icsForRules: icsForRules

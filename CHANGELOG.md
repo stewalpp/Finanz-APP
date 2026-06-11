@@ -6,6 +6,12 @@ Versionsmarker für installierte PWAs.)
 
 ## 2026-06-11
 
+- **Neuer Tab „Persönlich"** mit Steffen/Lisa-Umschalter: zeigt pro Person Gehalt & Einnahmen,
+  eigene Fixkosten und private (nicht-gemeinsame) Ausgaben des Monats + „bleibt dir"-Überblick.
+  Zeilen sind antippbar (öffnen den jeweiligen Editor). Tab-Leiste jetzt 6 Tabs.
+  Neue reine Funktion `Analysis.personalSummary()`. (`personal.js`, `analysis.js`, `index.html`,
+  `sw.js`; SW-Cache `v6`)
+- **Neue Kategorie „Kredite"** (💳, Ausgabe). (`core.js`)
 - **Buchungen: Wischen nach links zum Löschen** (iOS-Stil). Zeile nach links ziehen enthüllt einen
   roten „Löschen"-Button; kräftiger Wisch löscht direkt. Nur eine Zeile gleichzeitig offen,
   vertikales Scrollen unberührt, normaler Tipp öffnet weiterhin den Editor. (`transactions.js`,
