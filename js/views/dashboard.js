@@ -319,12 +319,6 @@
     App.toast('Gebucht ✓');
   }
 
-  function statusBadge(status) {
-    if (status === 'paid') return App.el('span', 'badge badge-green', 'Bezahlt ✓');
-    if (status === 'overdue') return App.el('span', 'badge badge-red', 'Überfällig');
-    return App.el('span', 'badge badge-orange', 'Fällig');
-  }
-
   function upcomingRow(item) {
     const rule = item.rule;
     const cat = App.cat(rule.category);
@@ -345,7 +339,6 @@
       isIncome ? 'amount-pos' : 'amount-neg',
       (isIncome ? '+' : '−') + App.fmtEUR(rule.amountCents)
     ));
-    trailing.appendChild(statusBadge(item.status));
 
     row.appendChild(icon);
     row.appendChild(main);

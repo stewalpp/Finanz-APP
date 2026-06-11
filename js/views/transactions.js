@@ -159,8 +159,7 @@
           cat.label,
           App.memberName(rule.payerId),
           rule.shared === true ? 'gemeinsam geteilt' : 'privat',
-          rule.type === 'income' ? 'einnahme' : 'fixkosten ausgabe',
-          item.status === 'overdue' ? 'ueberfaellig uberfaellig' : 'faellig faelligkeit'
+          rule.type === 'income' ? 'einnahme' : 'fixkosten ausgabe'
         ].join(' ').toLowerCase();
         if (ruleHay.indexOf(q) === -1) return;
       }
@@ -191,10 +190,6 @@
       var item = entry.kind === 'rule' ? entry.item.rule : entry.item;
       return item.type === 'income' ? sum + item.amountCents : sum;
     }, 0);
-    var plannedCount = entries.filter(function (entry) {
-      return entry.kind === 'rule';
-    }).length;
-
     var card = App.el('div', 'card hero-card');
     card.appendChild(App.el('div', 'card-title', 'Gemeinsame Ausgaben · ' + App.fmtMonth(state.month)));
     card.firstChild.textContent = 'Ausgaben & Fixkosten \u00b7 ' + App.fmtMonth(state.month);
@@ -202,7 +197,6 @@
     card.appendChild(big);
     var n = entries.length;
     var subText = (n === 1 ? '1 Eintrag' : n + ' Eintr\u00e4ge');
-    if (plannedCount > 0) subText += ' \u00b7 ' + plannedCount + ' f\u00e4llig';
     if (incomeSum > 0) subText += ' · Einnahmen ' + App.fmtEUR(incomeSum);
     var sub = App.el('div', 'hero-sub', subText);
     card.appendChild(sub);
@@ -277,11 +271,6 @@
       recurringId: rule.id
     });
     App.toast('Eintrag gebucht');
-  }
-
-  function statusBadge(status) {
-    if (status === 'overdue') return App.el('span', 'badge badge-red', '\u00dcberf\u00e4llig');
-    return App.el('span', 'badge badge-orange', 'F\u00e4llig');
   }
 
   function buildTxRow(tx) {
@@ -361,7 +350,6 @@
     var trailing = App.el('div', 'row-trailing');
     trailing.appendChild(App.el('span', isIncome ? 'amount-pos' : 'amount-neg',
       (isIncome ? '+' : '\u2212') + App.fmtEUR(rule.amountCents)));
-    trailing.appendChild(statusBadge(item.status));
 
     var btn = App.el('button', 'btn btn-secondary btn-small', 'Buchen');
     btn.type = 'button';
