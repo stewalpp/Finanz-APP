@@ -142,69 +142,94 @@
     return row;
   }
 
+  // a horizontal bar visualising one person's available amount, in their colour
+  function personBar(pid, cents, maxCents) {
+    const wrap = App.el('div');
+    wrap.style.padding = '8px 0 2px';
+
+    const top = App.el('div');
+    top.style.display = 'flex';
+    top.style.justifyContent = 'space-between';
+    top.style.alignItems = 'baseline';
+    top.style.marginBottom = '6px';
+
+    const nameEl = App.el('span', '', App.memberName(pid) || (pid === 'p1' ? 'Partner 1' : 'Partner 2'));
+    nameEl.style.fontSize = '14px';
+    nameEl.style.color = 'var(--text)';
+
+    const amt = App.el('span', '', App.fmtEUR(cents));
+    amt.style.fontSize = '15px';
+    amt.style.fontWeight = '700';
+    amt.style.fontVariantNumeric = 'tabular-nums';
+    amt.style.color = cents >= 0 ? 'var(--text)' : 'var(--red)';
+
+    top.appendChild(nameEl);
+    top.appendChild(amt);
+    wrap.appendChild(top);
+
+    const track = App.el('div');
+    track.style.height = '8px';
+    track.style.borderRadius = '100px';
+    track.style.background = 'var(--bg-input)';
+    track.style.overflow = 'hidden';
+
+    const pct = Math.max(3, Math.min(100, Math.round((Math.abs(cents) / maxCents) * 100)));
+    const fill = App.el('div');
+    fill.style.height = '100%';
+    fill.style.width = pct + '%';
+    fill.style.borderRadius = '100px';
+    fill.style.background = cents >= 0 ? memberColor(pid) : 'var(--red)';
+    fill.style.transition = 'width 0.4s cubic-bezier(0.32,0.72,0,1)';
+    track.appendChild(fill);
+    wrap.appendChild(track);
+    return wrap;
+  }
+
   function buildBudgetCard(txs, rules) {
     const budget = Analysis.availableBudget(txs, rules, selectedMonth);
     const t = budget.total;
 
-    const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Frei verfügbar diesen Monat'));
+    const card = App.el('div', 'card hero-card');
+    card.appendChild(App.el('div', 'card-title', 'Zusammen frei verfügbar · ' + App.fmtMonth(selectedMonth)));
 
-    // hero number
-    const hero = App.el('div');
-    hero.style.textAlign = 'center';
-    hero.style.padding = '4px 0 12px';
-    const big = App.el('div', '', App.fmtEUR(t.availableCents));
-    big.style.fontSize = '34px';
-    big.style.fontWeight = '700';
-    big.style.fontVariantNumeric = 'tabular-nums';
+    // combined hero number ("wieviel wir zusammen haben")
+    const big = App.el('div', 'hero-amount', App.fmtEUR(t.availableCents));
     big.style.color = t.availableCents >= 0 ? 'var(--green)' : 'var(--red)';
-    hero.appendChild(big);
-    const heroSub = App.el('div', '',
+    card.appendChild(big);
+    card.appendChild(App.el('div', 'hero-sub',
       t.availableCents >= 0
-        ? 'bleiben euch nach Fixkosten und Ausgaben'
-        : 'über dem geplanten Budget');
-    heroSub.style.color = 'var(--text-2)';
-    heroSub.style.fontSize = '13px';
-    heroSub.style.marginTop = '2px';
-    hero.appendChild(heroSub);
-    card.appendChild(hero);
+        ? 'bleiben euch diesen Monat nach Fixkosten & Ausgaben'
+        : 'über dem geplanten Budget'));
 
     // breakdown
-    card.appendChild(budgetLine('Geplante Einnahmen', t.plannedIncomeCents, '+', 'pos', false));
-    card.appendChild(budgetLine('Fixkosten', t.fixedCents, '−', 'neg', false));
-    card.appendChild(budgetLine('Bereits ausgegeben', t.variableSpentCents, '−', 'neg', false));
+    const bd = App.el('div');
+    bd.style.marginTop = '10px';
+    bd.appendChild(budgetLine('Geplante Einnahmen', t.plannedIncomeCents, '+', 'pos', false));
+    bd.appendChild(budgetLine('Fixkosten', t.fixedCents, '−', 'neg', false));
+    bd.appendChild(budgetLine('Bereits ausgegeben', t.variableSpentCents, '−', 'neg', false));
+    card.appendChild(bd);
 
-    // per-person split
+    // per-person visualisation ("jeder einzeln")
     const sep = App.el('div');
     sep.style.height = '0.5px';
     sep.style.background = 'var(--sep)';
-    sep.style.margin = '10px 0';
+    sep.style.margin = '12px 0 6px';
     card.appendChild(sep);
 
-    const perTitle = App.el('div', '', 'Pro Person frei verfügbar');
+    const perTitle = App.el('div', '', 'Pro Person');
     perTitle.style.color = 'var(--text-3)';
     perTitle.style.fontSize = '12px';
     perTitle.style.textTransform = 'uppercase';
-    perTitle.style.letterSpacing = '0.04em';
-    perTitle.style.marginBottom = '2px';
+    perTitle.style.letterSpacing = '0.05em';
     card.appendChild(perTitle);
 
+    const maxRef = Math.max(
+      Math.abs(budget.byPerson.p1.availableCents),
+      Math.abs(budget.byPerson.p2.availableCents),
+      1
+    );
     ['p1', 'p2'].forEach(function (pid) {
-      const p = budget.byPerson[pid];
-      const dot = App.el('span', 'dot');
-      dot.style.background = memberColor(pid);
-      const label = App.el('span', '');
-      label.appendChild(dot);
-      label.appendChild(document.createTextNode(App.memberName(pid) || (pid === 'p1' ? 'Partner 1' : 'Partner 2')));
-      const row = budgetLine('', p.availableCents, '', p.availableCents >= 0 ? 'pos' : 'neg', true);
-      // replace the (empty) label node with the dot + name label
-      row.replaceChild(label, row.firstChild);
-      label.style.display = 'flex';
-      label.style.alignItems = 'center';
-      label.style.gap = '8px';
-      label.style.color = 'var(--text)';
-      label.style.fontSize = '14px';
-      card.appendChild(row);
+      card.appendChild(personBar(pid, budget.byPerson[pid].availableCents, maxRef));
     });
 
     return card;
@@ -528,11 +553,11 @@
     const summary = Analysis.monthlySummary(txs, selectedMonth);
 
     view.appendChild(buildMonthNav());
+    view.appendChild(buildBudgetCard(txs, rules));   // hero: combined + per-person
     view.appendChild(buildStatGrid(summary));
-    view.appendChild(buildBudgetCard(txs, rules));
+    view.appendChild(buildCategoryCard(summary));
     view.appendChild(buildBalanceCard(txs));
     if (rules.length) view.appendChild(buildUpcomingCard(rules, txs));
-    view.appendChild(buildCategoryCard(summary));
     view.appendChild(buildRecentCard(txs));
 
     root.appendChild(view);

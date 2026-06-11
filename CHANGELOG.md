@@ -6,6 +6,11 @@ Versionsmarker für installierte PWAs.)
 
 ## 2026-06-11
 
+- **Dashboard übersichtlicher + Visualisierung pro Person & gemeinsam.** Übersicht führt jetzt mit
+  einer Hero-Karte „Zusammen frei verfügbar" (kombinierte Summe) und zwei farbigen Balken pro Person
+  (Steffen/Gisa). Reihenfolge gestrafft (Hero → Stats → Donut → Bilanz → Fixkosten → Letzte).
+- **Buchungen: farbige Personen-Markierung am linken Rand** jeder Kachel (in der Farbe des Zahlers) —
+  auf einen Blick sichtbar, wer gebucht hat. (`dashboard.js`, `transactions.js`; SW-Cache `v9`)
 - **Buchungen = nur gemeinsame Buchungen.** Der Tab zeigt jetzt ausschließlich als „gemeinsam"
   markierte Buchungen — mit Personen-Farbpunkt + Name (wer gebucht hat) und einer stets sichtbaren
   **Live-Summe** (Hero-Karte) oben. Personen- und Kategorie-Filter entfallen; private Buchungen leben
