@@ -305,19 +305,36 @@
       'Lege z. B. dein Gehalt als wiederkehrende Einnahme an – es erscheint dann jeden Monat automatisch.',
       addRecurringBtn('+ Wiederkehrende Einnahme', 'income')));
 
-    // Gemeinsame Fixkosten — shared rules only. They count half for each person,
-    // regardless of who actually pays the bill.
-    var ruleRows = rules
+    // Gemeinsame monatliche Fixkosten — shared monthly rules only. They count
+    // half for each person, regardless of who actually pays the bill.
+    var monthlySharedRows = rules
       .filter(function (r) {
         return r.active && r.type === 'expense' && r.shared === true &&
-          r.category !== 'sparen';
+          r.interval === 'monthly' && r.category !== 'sparen';
       })
       .map(ruleRow);
-    view.appendChild(sectionCard('Gemeinsame Fixkosten', ruleRows,
-      'Noch keine gemeinsamen Fixkosten. Miete, Nebenkosten, Kredite oder Lebensmittel-Beiträge hier als „Gemeinsam“ anlegen.',
-      addRecurringBtn('+ Gemeinsame Fixkosten', 'expense', {
+    view.appendChild(sectionCard('Gemeinsame monatliche Fixkosten', monthlySharedRows,
+      'Noch keine gemeinsamen monatlichen Fixkosten. Miete, Nebenkosten, Kredite oder Lebensmittel-Beiträge hier als „Gemeinsam“ anlegen.',
+      addRecurringBtn('+ Monatliche Fixkosten', 'expense', {
         shared: true,
+        interval: 'monthly',
         title: 'Neue gemeinsame Fixkosten'
+      })));
+
+    // Gemeinsame Jahres-/Quartalskosten — shared non-monthly rules live here
+    // so annual bills are visibly separate from the monthly baseline.
+    var nonMonthlySharedRows = rules
+      .filter(function (r) {
+        return r.active && r.type === 'expense' && r.shared === true &&
+          r.interval !== 'monthly' && r.category !== 'sparen';
+      })
+      .map(ruleRow);
+    view.appendChild(sectionCard('Gemeinsame Jahres-/Quartalskosten', nonMonthlySharedRows,
+      'Keine gemeinsamen jährlichen oder vierteljährlichen Kosten. Camper-Versicherung, GEZ oder Steuer hier anlegen.',
+      addRecurringBtn('+ Gemeinsame Jahreskosten', 'expense', {
+        shared: true,
+        interval: 'yearly',
+        title: 'Neue gemeinsame Jahreskosten'
       })));
 
     // Sparen & Anlegen — wealth building, never counted as consumption: savings

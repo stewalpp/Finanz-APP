@@ -280,10 +280,13 @@
     var members = getMembers();
     var defType = defaults.type === 'income' ? 'income' : 'expense';
     var defShared = defaults.shared === true;
+    var defInterval = defaults.interval === 'quarterly' || defaults.interval === 'yearly'
+      ? defaults.interval
+      : 'monthly';
     var st = {
       type: isEdit ? rule.type : defType,
       category: isEdit ? rule.category : (defaults.category || (defType === 'income' ? 'gehalt' : 'wohnen')),
-      interval: isEdit ? rule.interval : 'monthly',
+      interval: isEdit ? rule.interval : defInterval,
       payerId: isEdit ? rule.payerId : (defaults.payerId || 'p1'),
       shared: isEdit ? !!rule.shared : defShared,   // default: privat (zählt nicht in die Paar-Bilanz)
       privateExpense: isEdit ? rule.privateExpense === true : defaults.privateExpense === true

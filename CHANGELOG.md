@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (neunter Wurf)
+
+- **Persönlich trennt gemeinsame Kosten klarer.** Gemeinsame Fixkosten sind jetzt in
+  „Gemeinsame monatliche Fixkosten" und „Gemeinsame Jahres-/Quartalskosten" getrennt.
+  Der Button für gemeinsame Jahreskosten öffnet den Regel-Editor direkt mit jährlichem
+  Intervall.
+  SW-Cache `v23`.
+
 ## 2026-06-11 (achter Wurf)
 
 - **Übersicht wieder ruhiger.** Die Karte „Zusammen frei verfügbar" zeigt nur noch
