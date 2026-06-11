@@ -273,9 +273,10 @@ Analysis.coupleBalance(txs)
 //      debtorId: net>0?'p2':net<0?'p1':null }
 
 Analysis.fixedMonthlyCents(rules)
-// active expense rules: monthly + quarterly/3, rounded -> int
-// Yearly rules are NOT smoothed into the monthly figure — they count as individual
-// items in their due month (see availableBudget.yearlyItems / personalSummary.yearlyItems).
+// active MONTHLY expense rules only, rounded -> int
+// Quarterly and yearly rules are NOT smoothed into the monthly figure — they count as
+// individual items in their due month (availableBudget.nonMonthlyItems /
+// personalSummary.nonMonthlyItems).
 
 Analysis.upcomingForMonth(rules, txs, monthKey, todayISO)
 // active rules due in monthKey (monthly: always; quarterly: months since anchorMonth % 3 === 0;
@@ -286,34 +287,36 @@ Analysis.upcomingForMonth(rules, txs, monthKey, todayISO)
 
 Analysis.availableBudget(txs, rules, monthKey)
 // Forward-looking disposable budget ("frei verfügbar") for a month.
-// plannedIncome = monthly-equiv of active monthly/quarterly income rules + yearly income rules
-//                 due this month (full amount) + non-rule income txs of the month
-// fixed         = monthly-equiv of active monthly/quarterly expense rules (= fixedMonthlyCents)
-// yearlyDue     = yearly expense rules due this month at full amount; each also listed in
-//                 yearlyItems so the UI shows them as individual line items
+// plannedIncome = active monthly income rules + quarterly/yearly income rules due this month
+//                 (full amount) + non-rule income txs of the month
+// fixed         = active monthly expense rules (= fixedMonthlyCents)
+// nonMonthlyDue = quarterly + yearly expense rules due this month at full amount; each also
+//                 listed in nonMonthlyItems so the UI shows them as individual line items
+//                 (never smoothed over the other months)
 // variableSpent = expense txs of the month NOT linked to a rule (excl 'ausgleich'); txs matched
 //                 to a rule (recurringId OR upcomingForMonth fuzzy match) are excluded so a fixed
 //                 cost is never double-counted.
-// available     = plannedIncome − fixed − yearlyDue − variableSpent
-// -> { total: {plannedIncomeCents, fixedCents, yearlyDueCents, variableSpentCents, availableCents},
+// available     = plannedIncome − fixed − nonMonthlyDue − variableSpent
+// -> { total: {plannedIncomeCents, fixedCents, nonMonthlyDueCents, variableSpentCents, availableCents},
 //      byPerson: { p1:{...same...}, p2:{...same...} },    // shared rules/txs split 50/50, else to payer
-//      yearlyItems: [{id, name, amountCents, category, payerId, shared}] }
+//      nonMonthlyItems: [{id, name, amountCents, category, interval, payerId, shared}] }
 
 Analysis.personalSummary(txs, rules, personId, monthKey)
 // Per-person view, recurring-centric. Shared rules and shared txs count HALF for EACH
 // partner (regardless of payer); own non-shared items count fully; the partner's
-// non-shared items not at all. Yearly rules are not smoothed — they count (at the
-// person's share) in their due month only.
-// incomeCents  = monthly-equiv of income rules (own full, shared ½) + yearly income rules due
+// non-shared items not at all. Quarterly and yearly rules are not smoothed — they count
+// (at the person's share) in their due month only.
+// incomeCents  = monthly income rules (own full, shared ½) + quarterly/yearly income rules due
 //                this month + one-off income txs (own full, shared ½)
-// fixedCents   = monthly-equiv of monthly/quarterly expense rules (own non-private full, shared ½)
-// yearlyDueCents = yearly expense rules due this month (own full incl. privateExpense, shared ½);
-//                  individually listed in yearlyItems [{id, name, shareCents, shared}]
-// privateExpenseCents = monthly-equiv of own privateExpense rules + own non-shared one-off expense txs
+// fixedCents   = monthly expense rules (own non-private full, shared ½)
+// nonMonthlyDueCents = quarterly/yearly expense rules due this month (own full incl.
+//                  privateExpense, shared ½); individually listed in
+//                  nonMonthlyItems [{id, name, shareCents, interval, shared}]
+// privateExpenseCents = own monthly privateExpense rules + own non-shared one-off expense txs
 // sharedVariableCents = ½ of shared one-off (non-rule) expense txs of the month
 // One-off txs already covered by a counted rule are skipped (no double count); 'ausgleich' excluded.
-// -> { incomeCents, fixedCents, yearlyDueCents, yearlyItems, privateExpenseCents,
-//      sharedVariableCents, leftoverCents }   // leftover = income − fixed − yearlyDue − private − sharedVariable
+// -> { incomeCents, fixedCents, nonMonthlyDueCents, nonMonthlyItems, privateExpenseCents,
+//      sharedVariableCents, leftoverCents }   // leftover = income − fixed − nonMonthlyDue − private − sharedVariable
 
 Analysis.detectRecurring(txs, rules, dismissedKeys)
 // candidates: expense txs without recurringId. Group by normalized note (lowercase, trim, collapse

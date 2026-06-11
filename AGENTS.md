@@ -165,9 +165,16 @@ Diagrammen und Tipps **ausgenommen** — nur `Analysis.coupleBalance` nutzt sie.
 - **Gemeinsame Posten zählen 50/50 für beide** in allen Pro-Person-Rechnungen
   (`personalSummary`, `availableBudget.byPerson`, „Ausgaben pro Person"-Diagramm) —
   egal, wer zahlt. Die Paar-Bilanz (`coupleBalance`) regelt weiterhin, wer wem was schuldet.
-- **Jährliche Fixkosten werden nicht mehr auf den Monat umgelegt** (kein `/12`), sondern
-  erscheinen als Einzelposten im Fälligkeitsmonat (`availableBudget.yearlyItems`,
-  `personalSummary.yearlyItems`); `fixedMonthlyCents` = nur monatlich + vierteljährlich/3.
+- **Vierteljährliche & jährliche Fixkosten werden nicht auf die Monate umgelegt**
+  (kein `/3` bzw. `/12`), sondern erscheinen als Einzelposten im Fälligkeitsmonat
+  (`availableBudget.nonMonthlyItems`, `personalSummary.nonMonthlyItems`);
+  `fixedMonthlyCents` = nur monatliche Regeln.
+- **„Gemeinsamer Topf":** Der Tab „Buchungen" hat einen Umschalter „Gemeinsamer Topf /
+  Alle Buchungen" (Topf = Standard). Der Topf zeigt nur gemeinsame Buchungen +
+  Ausgleichszahlungen, Einzahlungen pro Person im Monat, laufenden Schulden-Stand
+  (coupleBalance) mit Ausgleichen-Button und „+ Gemeinsame Ausgabe" (Editor mit
+  Gemeinsam-Vorauswahl). Die Dashboard-Karte „Gemeinsamer Topf" verlinkt per
+  `Views.transactions.setScope('pot')` dorthin.
 - **Dashboard-Kategorie-Diagramm zweigeteilt:** „Gemeinsame Ausgaben nach Kategorie" und
   „Ausgaben pro Person" (Umschalter; privat voll + ½ der gemeinsamen Buchungen).
 - **5 Tabs:** Übersicht · Persönlich · Buchungen · Analyse · Mehr (Übersicht + Persönlich sind das

@@ -132,11 +132,12 @@
 
     card.appendChild(summaryLine('Gehalt & Einnahmen', sum.incomeCents, '+', 'pos'));
     card.appendChild(summaryLine('Fixkosten (mtl.)', sum.fixedCents, '−', 'neg'));
-    if (sum.yearlyDueCents > 0) {
-      card.appendChild(summaryLine('Jährliche Kosten (diesen Monat fällig)', sum.yearlyDueCents, '−', 'neg'));
-      sum.yearlyItems.forEach(function (item) {
+    if (sum.nonMonthlyDueCents > 0) {
+      card.appendChild(summaryLine('Diesen Monat zusätzlich fällig', sum.nonMonthlyDueCents, '−', 'neg'));
+      sum.nonMonthlyItems.forEach(function (item) {
+        var word = item.interval === 'quarterly' ? 'vierteljährlich' : 'jährlich';
         var row = App.el('div', 'row-sub',
-          '📅 ' + item.name + (item.shared ? ' (½)' : '') + ' · ' + App.fmtEUR(item.shareCents));
+          '📅 ' + item.name + (item.shared ? ' (½)' : '') + ' · ' + word + ' · ' + App.fmtEUR(item.shareCents));
         row.style.padding = '0 0 4px 12px';
         card.appendChild(row);
       });

@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (dritter Wurf)
+
+- **Vierteljährliche Kosten (z. B. GEZ) wie jährliche behandelt.** Keine Umlage mehr auf die
+  Monate (`/3` entfällt) — der volle Betrag zählt nur im Fälligkeitsmonat und erscheint dort
+  als Einzelposten („Diesen Monat zusätzlich fällig" in Übersicht & Persönlich, mit
+  Intervall-Angabe). API: `yearlyDueCents`/`yearlyItems` → `nonMonthlyDueCents`/
+  `nonMonthlyItems` (jetzt inkl. `interval`); `fixedMonthlyCents` = nur monatliche Regeln.
+  (`analysis.js`, `dashboard.js`, `personal.js`)
+- **Gemeinsamer Topf.** Der Tab „Buchungen" hat jetzt einen Umschalter „Gemeinsamer Topf /
+  Alle Buchungen" (Topf = Standard): Topf-Karte mit gemeinsamen Ausgaben des Monats,
+  „… hat eingezahlt"-Zeilen pro Person, laufendem Schulden-Stand inkl. Ausgleichen-Button
+  und „+ Gemeinsame Ausgabe" (Editor öffnet mit Gemeinsam-Vorauswahl). Die Liste zeigt im
+  Topf-Modus nur gemeinsame Buchungen, offene gemeinsame Fixkosten und Ausgleichszahlungen
+  (als „Ausgleichszahlung" markiert) — so ist nachvollziehbar, wer was in den Topf gezahlt
+  hat. Die Dashboard-Karte „Paar-Bilanz" heißt jetzt „Gemeinsamer Topf", zeigt die
+  Einzahlungen beider im gewählten Monat als Balken und verlinkt in den Topf.
+  (`transactions.js`, `dashboard.js`)
+  SW-Cache `v18`.
+
 ## 2026-06-11 (zweiter Wurf)
 
 - **Gemeinsame Ausgaben zählen jetzt für beide (50/50).** Gemeinsame Fixkosten-Regeln und

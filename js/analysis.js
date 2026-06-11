@@ -78,14 +78,11 @@
     return String(s == null ? '' : s).trim().replace(/\s+/g, ' ');
   }
 
-  // Smoothed monthly amount of a rule. Yearly rules are NEVER smoothed —
-  // they count as individual items in their due month (see availableBudget /
-  // personalSummary), so they return 0 here.
+  // Monthly amount of a rule. Quarterly and yearly rules are NEVER smoothed
+  // over the months — they count as individual items in the months they are
+  // actually debited (see availableBudget / personalSummary), so they return 0.
   function monthlyEquivCents(rule) {
-    var amt = cents(rule.amountCents);
-    if (rule.interval === 'monthly') return amt;
-    if (rule.interval === 'quarterly') return amt / 3;
-    return 0;
+    return rule.interval === 'monthly' ? cents(rule.amountCents) : 0;
   }
 
   /* ---------- public API ---------- */
@@ -180,8 +177,8 @@
     };
   }
 
-  // Monthly fixed costs: monthly rules + smoothed quarterly rules. Yearly rules
-  // are excluded — they appear as individual items in their due month instead.
+  // Monthly fixed costs: monthly rules only. Quarterly and yearly rules are
+  // excluded — they appear as individual items in their due month instead.
   function fixedMonthlyCents(rules) {
     var sum = 0;
     var list = rules || [];
@@ -250,13 +247,14 @@
   }
 
   // "Frei verfügbar" for a month: a forward-looking, plan-based budget.
-  //   plannedIncome = monthly-equiv of active income rules + non-rule income bookings this
-  //                   month + yearly income rules due this month
-  //   fixed         = monthly-equiv of active monthly/quarterly expense rules (= fixedMonthlyCents)
-  //   yearlyDue     = yearly expense rules due in this month, at full amount; each one is
-  //                   also returned in yearlyItems so the UI can list it individually
+  //   plannedIncome = monthly income rules + non-rule income bookings this month
+  //                   + quarterly/yearly income rules due this month
+  //   fixed         = active monthly expense rules (= fixedMonthlyCents)
+  //   nonMonthlyDue = quarterly + yearly expense rules due in this month, at full amount;
+  //                   each one is also returned in nonMonthlyItems so the UI lists it
+  //                   individually (never smoothed over the other months)
   //   variableSpent = expense bookings this month that are NOT part of a fixed-cost rule
-  //   available     = plannedIncome − fixed − yearlyDue − variableSpent
+  //   available     = plannedIncome − fixed − nonMonthlyDue − variableSpent
   // Bookings that belong to a rule (explicit recurringId link OR fuzzy match, same logic as
   // upcomingForMonth) are excluded from the booking loop so a fixed cost is never counted twice.
   // Per person: shared rules/bookings are split 50/50, everything else goes to its payer.
@@ -264,12 +262,12 @@
     var ruleList = rules || [];
     var txList = txs || [];
 
-    var total = { plannedIncome: 0, fixed: 0, yearlyDue: 0, variableSpent: 0 };
+    var total = { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, variableSpent: 0 };
     var per = {
-      p1: { plannedIncome: 0, fixed: 0, yearlyDue: 0, variableSpent: 0 },
-      p2: { plannedIncome: 0, fixed: 0, yearlyDue: 0, variableSpent: 0 }
+      p1: { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, variableSpent: 0 },
+      p2: { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, variableSpent: 0 }
     };
-    var yearlyItems = [];
+    var nonMonthlyItems = [];
 
     function add(field, amt, payerId, shared) {
       total[field] += amt;
@@ -285,18 +283,19 @@
       var r = ruleList[i];
       if (!r || !r.active) continue;
       var isShared = r.shared === true;
-      if (r.interval === 'yearly') {
+      if (r.interval !== 'monthly') {
         if (!ruleDueInMonth(r, monthKey)) continue;
         var amt = cents(r.amountCents);
         if (r.type === 'income') {
           add('plannedIncome', amt, r.payerId, isShared);
         } else if (r.type === 'expense') {
-          add('yearlyDue', amt, r.payerId, isShared);
-          yearlyItems.push({
+          add('nonMonthlyDue', amt, r.payerId, isShared);
+          nonMonthlyItems.push({
             id: r.id,
             name: r.name,
             amountCents: amt,
             category: r.category,
+            interval: r.interval,
             payerId: r.payerId,
             shared: isShared
           });
@@ -326,29 +325,30 @@
     function finalize(o) {
       var pi = Math.round(o.plannedIncome);
       var fx = Math.round(o.fixed);
-      var yd = Math.round(o.yearlyDue);
+      var nm = Math.round(o.nonMonthlyDue);
       var vs = Math.round(o.variableSpent);
       return {
         plannedIncomeCents: pi,
         fixedCents: fx,
-        yearlyDueCents: yd,
+        nonMonthlyDueCents: nm,
         variableSpentCents: vs,
-        availableCents: pi - fx - yd - vs
+        availableCents: pi - fx - nm - vs
       };
     }
 
     return {
       total: finalize(total),
       byPerson: { p1: finalize(per.p1), p2: finalize(per.p2) },
-      yearlyItems: yearlyItems
+      nonMonthlyItems: nonMonthlyItems
     };
   }
 
   // Per-person view ("Persönlich"): that person's income, their fixed costs, and their
   // private expenses for the month. Shared rules and shared bookings count HALF for
-  // each partner, regardless of who pays them. Yearly rules are not smoothed — they
-  // count (at the person's share) in their due month only. Recurring private expenses
-  // are counted under private expenses instead of fixed costs. 'ausgleich' is ignored.
+  // each partner, regardless of who pays them. Quarterly and yearly rules are not
+  // smoothed — they count (at the person's share) in their due month only. Recurring
+  // private expenses are counted under private expenses instead of fixed costs.
+  // 'ausgleich' is ignored.
   function personalSummary(txs, rules, personId, monthKey) {
     var rl = rules || [];
     var list = txs || [];
@@ -356,8 +356,8 @@
     var recurringIncome = 0;
     var fixed = 0;
     var recurringPrivateExpense = 0;
-    var yearlyDue = 0;
-    var yearlyItems = [];
+    var nonMonthlyDue = 0;
+    var nonMonthlyItems = [];
 
     // every rule this person carries (in part): own rules fully, shared rules half
     var relevantRules = [];
@@ -367,14 +367,20 @@
       var share = r.shared === true ? 0.5 : (r.payerId === personId ? 1 : 0);
       if (share === 0) continue;
       relevantRules.push(r);
-      if (r.interval === 'yearly') {
+      if (r.interval !== 'monthly') {
         if (!ruleDueInMonth(r, monthKey)) continue;
         var amt = cents(r.amountCents) * share;
         if (r.type === 'income') {
           recurringIncome += amt;
         } else if (r.type === 'expense') {
-          yearlyDue += amt;
-          yearlyItems.push({ id: r.id, name: r.name, shareCents: Math.round(amt), shared: r.shared === true });
+          nonMonthlyDue += amt;
+          nonMonthlyItems.push({
+            id: r.id,
+            name: r.name,
+            shareCents: Math.round(amt),
+            interval: r.interval,
+            shared: r.shared === true
+          });
         }
       } else {
         var eq = monthlyEquivCents(r) * share;
@@ -417,18 +423,18 @@
 
     var incomeCents = Math.round(recurringIncome + oneOffIncome);
     fixed = Math.round(fixed);
-    yearlyDue = Math.round(yearlyDue);
+    nonMonthlyDue = Math.round(nonMonthlyDue);
     privateExpenseCents = Math.round(privateExpenseCents + recurringPrivateExpense);
     var sharedVariableCents = Math.round(sharedVariable);
 
     return {
       incomeCents: incomeCents,
       fixedCents: fixed,
-      yearlyDueCents: yearlyDue,
-      yearlyItems: yearlyItems,
+      nonMonthlyDueCents: nonMonthlyDue,
+      nonMonthlyItems: nonMonthlyItems,
       privateExpenseCents: privateExpenseCents,
       sharedVariableCents: sharedVariableCents,
-      leftoverCents: incomeCents - fixed - yearlyDue - privateExpenseCents - sharedVariableCents
+      leftoverCents: incomeCents - fixed - nonMonthlyDue - privateExpenseCents - sharedVariableCents
     };
   }
 

@@ -5,9 +5,10 @@
   window.Views = window.Views || {};
 
   // ---- module-level state (persists across re-renders) ----
-  // Buchungen zeigt ausschließlich GEMEINSAME (shared) Buchungen. Private Buchungen
-  // leben im Tab „Persönlich". Daher keine Personen-/Kategorie-Filter mehr.
+  // Zwei Ansichten: „Gemeinsamer Topf" (nur gemeinsame Buchungen + Ausgleichszahlungen,
+  // mit Einzahlungs-Übersicht pro Person) und „Alle Buchungen" (kompletter Monats-Ledger).
   var state = {
+    scope: 'pot',      // 'pot' | 'all'
     month: null,       // 'YYYY-MM' — lazily initialized to current month
     search: ''
   };
@@ -57,12 +58,34 @@
 
     var listWrap = App.el('div', '');
 
+    view.appendChild(buildScopeSwitch(root));
     view.appendChild(buildMonthNav(root));
     view.appendChild(buildSearchbar(listWrap));
     view.appendChild(listWrap);
     renderList(listWrap);
 
     root.appendChild(view);
+  }
+
+  function buildScopeSwitch(root) {
+    var seg = App.el('div', 'segmented');
+    seg.style.marginBottom = '14px';
+    [
+      { key: 'pot', label: 'Gemeinsamer Topf' },
+      { key: 'all', label: 'Alle Buchungen' }
+    ].forEach(function (d) {
+      var btn = App.el('button', 'segment' + (state.scope === d.key ? ' active' : ''), d.label);
+      btn.type = 'button';
+      btn.addEventListener('click', function () {
+        if (state.scope === d.key) return;
+        state.scope = d.key;
+        state.search = '';      // a search from the other scope would silently filter here
+        render(root);
+        window.scrollTo(0, 0);
+      });
+      seg.appendChild(btn);
+    });
+    return seg;
   }
 
   function buildMonthNav(root) {
@@ -133,7 +156,13 @@
     var entries = [];
 
     txs.forEach(function (tx) {
-      if (tx.category === 'ausgleich') return;
+      var isSettlement = tx.category === 'ausgleich';
+      if (state.scope === 'pot') {
+        // pot: shared bookings + settlement transfers (traceable history)
+        if (tx.shared !== true && !isSettlement) return;
+      } else if (isSettlement) {
+        return;
+      }
       if (App.monthKey(tx.date) !== state.month) return;
       if (q) {
         var cat = App.cat(tx.category);
@@ -152,6 +181,7 @@
     Analysis.upcomingForMonth(rules, txs, state.month, App.todayISO()).forEach(function (item) {
       if (item.status === 'paid') return;
       var rule = item.rule;
+      if (state.scope === 'pot' && rule.shared !== true) return;
       if (q) {
         var cat = App.cat(rule.category);
         var ruleHay = [
@@ -204,12 +234,128 @@
     return card;
   }
 
+  // ---------------------------------------------------------------- pot card
+
+  function settleUp(balance) {
+    var debtorId = balance.debtorId;
+    var creditorId = debtorId === 'p1' ? 'p2' : 'p1';
+    App.confirm({
+      title: 'Ausgleichen',
+      message:
+        App.memberName(debtorId) + ' zahlt ' + App.memberName(creditorId) + ' ' +
+        App.fmtEUR(balance.owesCents) + '. Eine Ausgleichs-Buchung wird erstellt.',
+      confirmText: 'Ausgleichen'
+    }).then(function (ok) {
+      if (!ok) return;
+      Store.addTransaction({
+        type: 'expense',
+        amountCents: balance.owesCents,
+        category: 'ausgleich',
+        note: 'Ausgleich',
+        date: App.todayISO(),
+        payerId: debtorId,
+        shared: false,
+        recurringId: null
+      });
+      App.toast('Ausgleich gebucht ✓');
+    });
+  }
+
+  // Pot hero: shared expenses booked this month, contributions per person,
+  // running balance (all-time, after settlements) + settle button + quick add.
+  function buildPotCard(entries) {
+    var card = App.el('div', 'card hero-card');
+    card.appendChild(App.el('div', 'card-title', 'Gemeinsamer Topf · ' + App.fmtMonth(state.month)));
+
+    var expenseSum = 0;
+    var paid = { p1: 0, p2: 0 };
+    entries.forEach(function (entry) {
+      if (entry.kind !== 'tx') return;
+      var tx = entry.item;
+      if (tx.category === 'ausgleich' || tx.shared !== true || tx.type !== 'expense') return;
+      expenseSum += tx.amountCents;
+      if (paid[tx.payerId] !== undefined) paid[tx.payerId] += tx.amountCents;
+    });
+
+    card.appendChild(App.el('div', 'hero-amount', App.fmtEUR(expenseSum)));
+    card.appendChild(App.el('div', 'hero-sub', 'gemeinsame Ausgaben in diesem Monat'));
+
+    // contributions per person (single note instead of two zero rows)
+    if (paid.p1 === 0 && paid.p2 === 0) {
+      var none = App.el('p', 'row-sub', 'Noch keine Einzahlungen in diesem Monat.');
+      none.style.margin = '2px 0 0';
+      card.appendChild(none);
+    } else {
+      ['p1', 'p2'].forEach(function (pid) {
+        var row = App.el('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.padding = '5px 0';
+        var label = App.el('span');
+        label.style.display = 'inline-flex';
+        label.style.alignItems = 'center';
+        label.style.gap = '8px';
+        var dot = App.el('span', 'dot');
+        dot.style.background = memberColor(pid);
+        label.appendChild(dot);
+        label.appendChild(App.el('span', '', (App.memberName(pid) || pid) + ' hat eingezahlt'));
+        var val = App.el('span', '', App.fmtEUR(paid[pid]));
+        val.style.fontWeight = '600';
+        val.style.fontVariantNumeric = 'tabular-nums';
+        row.appendChild(label);
+        row.appendChild(val);
+        card.appendChild(row);
+      });
+    }
+
+    var sep = App.el('div');
+    sep.style.height = '0.5px';
+    sep.style.background = 'var(--sep)';
+    sep.style.margin = '10px 0';
+    card.appendChild(sep);
+
+    // running balance across all months (settlements included)
+    var balance = Analysis.coupleBalance(Store.getTransactions());
+    if (balance.owesCents > 0 && balance.debtorId) {
+      var creditor = balance.debtorId === 'p1' ? 'p2' : 'p1';
+      var line = App.el('p', '',
+        (App.memberName(balance.debtorId) || balance.debtorId) + ' schuldet ' +
+        (App.memberName(creditor) || creditor) + ' ' + App.fmtEUR(balance.owesCents));
+      line.style.fontSize = '15px';
+      line.style.fontWeight = '600';
+      line.style.margin = '0 0 10px';
+      card.appendChild(line);
+
+      var settleBtn = App.el('button', 'btn btn-secondary', 'Ausgleichen');
+      settleBtn.type = 'button';
+      settleBtn.addEventListener('click', function () { settleUp(balance); });
+      card.appendChild(settleBtn);
+    } else {
+      var quitt = App.el('p', '', 'Ihr seid quitt ✓');
+      quitt.style.fontSize = '15px';
+      quitt.style.fontWeight = '600';
+      quitt.style.margin = '0';
+      card.appendChild(quitt);
+    }
+
+    var addBtn = App.el('button', 'btn btn-primary', '+ Gemeinsame Ausgabe');
+    addBtn.type = 'button';
+    addBtn.style.marginTop = '12px';
+    addBtn.addEventListener('click', function () {
+      openEditor(null, { shared: true });
+    });
+    card.appendChild(addBtn);
+
+    return card;
+  }
+
   function renderList(wrap) {
     wrap.innerHTML = '';
     var entries = getLedgerEntries();
 
-    // live total always on top
-    wrap.appendChild(buildTotalCard(entries));
+    // live summary always on top
+    wrap.appendChild(state.scope === 'pot' ? buildPotCard(entries) : buildTotalCard(entries));
 
     if (!entries.length) {
       var hasSearch = state.search.trim() !== '';
@@ -220,7 +366,9 @@
       empty.appendChild(em);
       empty.appendChild(App.el('p', '', hasSearch
         ? 'Keine Treffer für deine Suche.'
-        : 'Noch keine gemeinsamen Buchungen in diesem Monat. Tippe auf + und wähle „Gemeinsam“.'));
+        : (state.scope === 'pot'
+          ? 'Noch keine gemeinsamen Buchungen in diesem Monat. Tippe auf „+ Gemeinsame Ausgabe“.'
+          : 'Noch keine Buchungen in diesem Monat.')));
       wrap.appendChild(empty);
       return;
     }
@@ -303,7 +451,8 @@
     sub.appendChild(dot);
     sub.appendChild(document.createTextNode(
       cat.label + ' · ' + (App.memberName(tx.payerId) || '–') +
-      ' · ' + (tx.shared === true ? 'Gemeinsam' : 'Privat')
+      ' · ' + (tx.category === 'ausgleich' ? 'Ausgleichszahlung'
+        : (tx.shared === true ? 'Gemeinsam' : 'Privat'))
     ));
     main.appendChild(sub);
 
@@ -474,14 +623,17 @@
 
   // ---------------------------------------------------------------- editor
 
-  function openEditor(tx) {
+  // defaults (optional): { shared, payerId } to preset a NEW booking
+  // (used by the pot's "+ Gemeinsame Ausgabe" button)
+  function openEditor(tx, defaults) {
     var isEdit = !!tx;
+    defaults = defaults || {};
     var members = getMembers();
     var st = {
       type: isEdit ? tx.type : 'expense',
       category: isEdit ? tx.category : 'lebensmittel',
-      payerId: isEdit ? tx.payerId : 'p1',
-      shared: isEdit ? !!tx.shared : false   // default: privat (zählt nicht in die Paar-Bilanz)
+      payerId: isEdit ? tx.payerId : (defaults.payerId === 'p2' ? 'p2' : 'p1'),
+      shared: isEdit ? !!tx.shared : defaults.shared === true   // default: privat (zählt nicht in die Paar-Bilanz)
     };
 
     var content = App.el('div', '');
@@ -703,6 +855,10 @@
   window.Views.transactions = {
     title: 'Buchungen',
     render: render,
-    openEditor: openEditor
+    openEditor: openEditor,
+    // preset the scope before switching to this tab (used by the dashboard's pot link)
+    setScope: function (scope) {
+      if (scope === 'pot' || scope === 'all') state.scope = scope;
+    }
   };
 })();

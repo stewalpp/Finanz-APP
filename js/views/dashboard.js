@@ -207,17 +207,19 @@
     bd.style.marginTop = '10px';
     bd.appendChild(budgetLine('Geplante Einnahmen', t.plannedIncomeCents, '+', 'pos', false));
     bd.appendChild(budgetLine('Monatliche Fixkosten', t.fixedCents, '−', 'neg', false));
-    // yearly costs due this month, listed individually (not part of the monthly fixed costs)
-    if (budget.yearlyItems.length) {
-      const yTitle = App.el('div', '', 'Jährliche Kosten diesen Monat');
+    // quarterly + yearly costs due this month, listed individually
+    // (never smoothed into the monthly fixed costs)
+    if (budget.nonMonthlyItems.length) {
+      const yTitle = App.el('div', '', 'Diesen Monat zusätzlich fällig');
       yTitle.style.color = 'var(--text-3)';
       yTitle.style.fontSize = '12px';
       yTitle.style.textTransform = 'uppercase';
       yTitle.style.letterSpacing = '0.05em';
       yTitle.style.marginTop = '6px';
       bd.appendChild(yTitle);
-      budget.yearlyItems.forEach(function (item) {
-        bd.appendChild(budgetLine('📅 ' + item.name, item.amountCents, '−', 'neg', true));
+      budget.nonMonthlyItems.forEach(function (item) {
+        const word = item.interval === 'quarterly' ? 'vierteljährlich' : 'jährlich';
+        bd.appendChild(budgetLine('📅 ' + item.name + ' (' + word + ')', item.amountCents, '−', 'neg', true));
       });
     }
     bd.appendChild(budgetLine('Bereits ausgegeben', t.variableSpentCents, '−', 'neg', false));
@@ -279,8 +281,35 @@
 
   function buildBalanceCard(txs) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Paar-Bilanz'));
+    card.appendChild(App.el('div', 'card-title', 'Gemeinsamer Topf'));
 
+    // contributions to the pot in the selected month
+    const paid = { p1: 0, p2: 0 };
+    txs.forEach(function (t) {
+      if (t.shared === true && t.type === 'expense' && t.category !== 'ausgleich' &&
+          App.monthKey(t.date) === selectedMonth && paid[t.payerId] !== undefined) {
+        paid[t.payerId] += t.amountCents;
+      }
+    });
+    const caption = App.el('div', '', 'Eingezahlt im ' + App.fmtMonth(selectedMonth));
+    caption.style.color = 'var(--text-3)';
+    caption.style.fontSize = '12px';
+    caption.style.textTransform = 'uppercase';
+    caption.style.letterSpacing = '0.05em';
+    card.appendChild(caption);
+
+    const maxPaid = Math.max(paid.p1, paid.p2, 1);
+    ['p1', 'p2'].forEach(function (pid) {
+      card.appendChild(personBar(pid, paid[pid], maxPaid));
+    });
+
+    const sep = App.el('div');
+    sep.style.height = '0.5px';
+    sep.style.background = 'var(--sep)';
+    sep.style.margin = '12px 0 10px';
+    card.appendChild(sep);
+
+    // running balance across all months (settlements included)
     const balance = Analysis.coupleBalance(txs);
 
     if (balance.owesCents > 0 && balance.debtorId) {
@@ -292,15 +321,8 @@
       );
       line.style.fontSize = '16px';
       line.style.fontWeight = '600';
+      line.style.margin = '0 0 12px';
       card.appendChild(line);
-
-      const sub = App.el(
-        'p', 'row-sub',
-        'Gemeinsame Ausgaben: ' + App.memberName('p1') + ' ' + App.fmtEUR(balance.paidSharedCents.p1) +
-        ' · ' + App.memberName('p2') + ' ' + App.fmtEUR(balance.paidSharedCents.p2)
-      );
-      sub.style.margin = '6px 0 12px';
-      card.appendChild(sub);
 
       const btn = App.el('button', 'btn btn-secondary', 'Ausgleichen');
       btn.type = 'button';
@@ -310,8 +332,19 @@
       const line = App.el('p', '', 'Ihr seid quitt ✓');
       line.style.fontSize = '16px';
       line.style.fontWeight = '600';
+      line.style.margin = '0';
       card.appendChild(line);
     }
+
+    const link = App.el('div', 'link-row', 'Gemeinsamen Topf öffnen →');
+    link.setAttribute('role', 'button');
+    link.addEventListener('click', function () {
+      if (window.Views.transactions && window.Views.transactions.setScope) {
+        window.Views.transactions.setScope('pot');
+      }
+      App.switchTab('transactions');
+    });
+    card.appendChild(link);
     return card;
   }
 
@@ -541,7 +574,12 @@
 
     const link = App.el('div', 'link-row', 'Alle anzeigen →');
     link.setAttribute('role', 'button');
-    link.addEventListener('click', function () { App.switchTab('transactions'); });
+    link.addEventListener('click', function () {
+      if (window.Views.transactions && window.Views.transactions.setScope) {
+        window.Views.transactions.setScope('all');
+      }
+      App.switchTab('transactions');
+    });
     card.appendChild(link);
     return card;
   }
