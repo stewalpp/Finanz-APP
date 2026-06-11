@@ -9,6 +9,7 @@
   // Module-level state (persists across re-renders)
   // ---------------------------------------------------------------------------
   let selectedMonth = null; // 'YYYY-MM'; lazily initialized to the current month
+  let chartPerson = 'p1';   // person selected in the "Ausgaben pro Person" chart
 
   // ---------------------------------------------------------------------------
   // Small helpers
@@ -205,7 +206,20 @@
     const bd = App.el('div');
     bd.style.marginTop = '10px';
     bd.appendChild(budgetLine('Geplante Einnahmen', t.plannedIncomeCents, '+', 'pos', false));
-    bd.appendChild(budgetLine('Fixkosten', t.fixedCents, '−', 'neg', false));
+    bd.appendChild(budgetLine('Monatliche Fixkosten', t.fixedCents, '−', 'neg', false));
+    // yearly costs due this month, listed individually (not part of the monthly fixed costs)
+    if (budget.yearlyItems.length) {
+      const yTitle = App.el('div', '', 'Jährliche Kosten diesen Monat');
+      yTitle.style.color = 'var(--text-3)';
+      yTitle.style.fontSize = '12px';
+      yTitle.style.textTransform = 'uppercase';
+      yTitle.style.letterSpacing = '0.05em';
+      yTitle.style.marginTop = '6px';
+      bd.appendChild(yTitle);
+      budget.yearlyItems.forEach(function (item) {
+        bd.appendChild(budgetLine('📅 ' + item.name, item.amountCents, '−', 'neg', true));
+      });
+    }
     bd.appendChild(budgetLine('Bereits ausgegeben', t.variableSpentCents, '−', 'neg', false));
     card.appendChild(bd);
 
@@ -405,10 +419,8 @@
     return row;
   }
 
-  function buildCategoryCard(summary) {
-    const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Ausgaben nach Kategorie'));
-
+  // donut + legend for a pre-computed summary; returns false if there is nothing to draw
+  function appendDonut(card, summary, centerSub) {
     const items = summary.byCategory.map(function (c) {
       const cat = App.cat(c.category);
       return { label: cat.label, value: c.cents, color: cat.color };
@@ -417,18 +429,69 @@
     const chartWrap = App.el('div');
     const drawn = Charts.donut(chartWrap, items, {
       centerTitle: App.fmtEUR(summary.expenseCents),
-      centerSub: 'Ausgaben'
+      centerSub: centerSub
     });
-
-    if (!drawn) {
-      card.appendChild(emptyState('🪙', 'Keine Ausgaben in diesem Monat.'));
-      return card;
-    }
+    if (!drawn) return false;
 
     card.appendChild(chartWrap);
     summary.byCategory.forEach(function (c) {
       card.appendChild(legendRow(c.category, c.cents, summary.expenseCents));
     });
+    return true;
+  }
+
+  // shared (gemeinsame) expense bookings of the month, by category
+  function buildSharedCategoryCard(txs) {
+    const card = App.el('div', 'card');
+    card.appendChild(App.el('div', 'card-title', 'Gemeinsame Ausgaben nach Kategorie'));
+
+    const sharedTxs = txs.filter(function (t) { return t.shared === true; });
+    const summary = Analysis.monthlySummary(sharedTxs, selectedMonth);
+
+    if (!appendDonut(card, summary, 'Gemeinsam')) {
+      card.appendChild(emptyState('🤝', 'Keine gemeinsamen Ausgaben in diesem Monat.'));
+    }
+    return card;
+  }
+
+  // per-person expense bookings of the month: own private bookings at full
+  // amount plus half of every shared booking (same 50/50 rule as everywhere)
+  function buildPersonCategoryCard(txs) {
+    const card = App.el('div', 'card');
+    card.appendChild(App.el('div', 'card-title', 'Ausgaben pro Person'));
+
+    const seg = App.el('div', 'segmented');
+    seg.style.marginBottom = '10px';
+    ['p1', 'p2'].forEach(function (pid) {
+      const btn = App.el('button', 'segment' + (pid === chartPerson ? ' active' : ''),
+        App.memberName(pid) || (pid === 'p1' ? 'Partner 1' : 'Partner 2'));
+      btn.type = 'button';
+      btn.addEventListener('click', function () {
+        if (chartPerson === pid) return;
+        chartPerson = pid;
+        App.rerender();
+      });
+      seg.appendChild(btn);
+    });
+    card.appendChild(seg);
+
+    const personTxs = txs
+      .filter(function (t) { return t.shared !== true && t.payerId === chartPerson; })
+      .concat(txs
+        .filter(function (t) { return t.shared === true; })
+        .map(function (t) {
+          return Object.assign({}, t, { amountCents: Math.round(t.amountCents / 2) });
+        }));
+    const summary = Analysis.monthlySummary(personTxs, selectedMonth);
+
+    if (appendDonut(card, summary, App.memberName(chartPerson))) {
+      const note = App.el('p', 'row-sub', 'Private Ausgaben plus die Hälfte der gemeinsamen Ausgaben.');
+      note.style.marginTop = '8px';
+      card.appendChild(note);
+    } else {
+      card.appendChild(emptyState('🪙', 'Keine Ausgaben von ' +
+        (App.memberName(chartPerson) || 'dieser Person') + ' in diesem Monat.'));
+    }
     return card;
   }
 
@@ -596,7 +659,8 @@
     view.appendChild(buildStatGrid(summary));
     var suggestionsCard = buildSuggestionsCard(txs, rules);
     if (suggestionsCard) view.appendChild(suggestionsCard);
-    view.appendChild(buildCategoryCard(summary));
+    view.appendChild(buildSharedCategoryCard(txs));
+    view.appendChild(buildPersonCategoryCard(txs));
     view.appendChild(buildBalanceCard(txs));
     if (rules.length) view.appendChild(buildUpcomingCard(rules, txs));
     view.appendChild(buildRecentCard(txs));

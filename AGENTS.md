@@ -162,6 +162,14 @@ Diagrammen und Tipps **ausgenommen** — nur `Analysis.coupleBalance` nutzt sie.
 ## 10. Funktionsstand & Erweiterungen seit SPEC.md
 
 Über die ursprüngliche `SPEC.md` hinaus bereits umgesetzt (siehe `CHANGELOG.md`):
+- **Gemeinsame Posten zählen 50/50 für beide** in allen Pro-Person-Rechnungen
+  (`personalSummary`, `availableBudget.byPerson`, „Ausgaben pro Person"-Diagramm) —
+  egal, wer zahlt. Die Paar-Bilanz (`coupleBalance`) regelt weiterhin, wer wem was schuldet.
+- **Jährliche Fixkosten werden nicht mehr auf den Monat umgelegt** (kein `/12`), sondern
+  erscheinen als Einzelposten im Fälligkeitsmonat (`availableBudget.yearlyItems`,
+  `personalSummary.yearlyItems`); `fixedMonthlyCents` = nur monatlich + vierteljährlich/3.
+- **Dashboard-Kategorie-Diagramm zweigeteilt:** „Gemeinsame Ausgaben nach Kategorie" und
+  „Ausgaben pro Person" (Umschalter; privat voll + ½ der gemeinsamen Buchungen).
 - **5 Tabs:** Übersicht · Persönlich · Buchungen · Analyse · Mehr (Übersicht + Persönlich sind das
   Herzstück, zuerst). Der frühere Fixkosten-Tab wurde entfernt: Regeln verwaltet man in „Persönlich",
   Erkennung + fällige Fixkosten zeigt das Dashboard, ICS-Export liegt in „Mehr".

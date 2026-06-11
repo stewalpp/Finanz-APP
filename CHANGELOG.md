@@ -4,6 +4,28 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (zweiter Wurf)
+
+- **Gemeinsame Ausgaben zählen jetzt für beide (50/50).** Gemeinsame Fixkosten-Regeln und
+  gemeinsame Buchungen werden in allen Pro-Person-Rechnungen je zur Hälfte beiden Partnern
+  angerechnet — unabhängig davon, wer zahlt (z. B. Camper-Kredit 462 € gemeinsam → je 231 €).
+  Betrifft `Analysis.personalSummary` (Tab „Persönlich": Summary inkl. neuer Zeile „Gemeinsame
+  Ausgaben (½)", Fixkosten-Liste zeigt nun auch die gemeinsamen Posten des Partners mit
+  „Gemeinsam (zählt ½) · zahlt …"-Hinweis). `availableBudget.byPerson` arbeitete bereits 50/50.
+  Die Paar-Bilanz (wer schuldet wem) bleibt unverändert. (`analysis.js`, `personal.js`)
+- **Jährliche Fixkosten als Einzelposten statt Monats-Umlage.** Jährliche Regeln werden nicht
+  mehr durch 12 geteilt in die monatlichen Fixkosten eingerechnet, sondern erscheinen im
+  Fälligkeitsmonat als eigene Position: in der „Frei verfügbar"-Karte der Übersicht als
+  einzelne Zeilen unter „Jährliche Kosten diesen Monat", im Tab „Persönlich" als Zeile
+  „Jährliche Kosten (diesen Monat fällig)" mit Auflistung. `fixedMonthlyCents` = nur
+  monatlich + vierteljährlich/3; `availableBudget` und `personalSummary` liefern
+  `yearlyDueCents` + `yearlyItems`. (`analysis.js`, `dashboard.js`, `personal.js`)
+- **Dashboard: Kategorie-Diagramm zweigeteilt.** Statt einem Donut über alle Ausgaben gibt es
+  jetzt „Gemeinsame Ausgaben nach Kategorie" (nur gemeinsame Buchungen) und „Ausgaben pro
+  Person" mit Personen-Umschalter (private Buchungen voll + die Hälfte jeder gemeinsamen
+  Buchung). (`dashboard.js`)
+  SW-Cache `v17`.
+
 ## 2026-06-11
 
 - **Analyse stark überarbeitet.** Neu: **Sparverlauf** (kumulatives Erspartes als Flächen-/Linien-Chart,

@@ -132,7 +132,24 @@
 
     card.appendChild(summaryLine('Gehalt & Einnahmen', sum.incomeCents, '+', 'pos'));
     card.appendChild(summaryLine('Fixkosten (mtl.)', sum.fixedCents, '−', 'neg'));
+    if (sum.yearlyDueCents > 0) {
+      card.appendChild(summaryLine('Jährliche Kosten (diesen Monat fällig)', sum.yearlyDueCents, '−', 'neg'));
+      sum.yearlyItems.forEach(function (item) {
+        var row = App.el('div', 'row-sub',
+          '📅 ' + item.name + (item.shared ? ' (½)' : '') + ' · ' + App.fmtEUR(item.shareCents));
+        row.style.padding = '0 0 4px 12px';
+        card.appendChild(row);
+      });
+    }
     card.appendChild(summaryLine('Private Ausgaben', sum.privateExpenseCents, '−', 'neg'));
+    if (sum.sharedVariableCents > 0) {
+      card.appendChild(summaryLine('Gemeinsame Ausgaben (½)', sum.sharedVariableCents, '−', 'neg'));
+    }
+
+    var note = App.el('p', 'row-sub', 'Gemeinsame Posten zählen für beide je zur Hälfte.');
+    note.style.textAlign = 'center';
+    note.style.marginTop = '8px';
+    card.appendChild(note);
     return card;
   }
 
@@ -177,7 +194,10 @@
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', rule.name || cat.label));
-    main.appendChild(App.el('div', 'row-sub', '↻ ' + word + ' · ' + cat.label));
+    main.appendChild(App.el('div', 'row-sub', '↻ ' + word + ' · ' + cat.label +
+      (rule.shared === true
+        ? ' · Gemeinsam (zählt ½) · zahlt ' + (personName(rule.payerId))
+        : '')));
 
     var trailing = App.el('div', 'row-trailing');
     var isIncome = rule.type === 'income';
@@ -239,11 +259,12 @@
     view.appendChild(buildMonthNav());
     view.appendChild(buildSummaryCard(sum));
 
-    // Gehalt & wiederkehrende Einnahmen — recurring income rules (auto every month)
-    // plus any one-off income bookings this month
+    // Gehalt & wiederkehrende Einnahmen — recurring income rules (auto every month,
+    // shared ones count half for each partner) plus one-off income bookings this month
     var incomeRuleRows = rules
       .filter(function (r) {
-        return r.active && r.type === 'income' && r.payerId === selectedPerson;
+        return r.active && r.type === 'income' &&
+          (r.payerId === selectedPerson || r.shared === true);
       })
       .map(ruleRow);
     var oneOffIncomeRows = txs
@@ -257,12 +278,13 @@
       'Lege z. B. dein Gehalt als wiederkehrende Einnahme an – es erscheint dann jeden Monat automatisch.',
       addRecurringBtn('+ Wiederkehrende Einnahme', 'income')));
 
-    // Fixkosten — active expense rules of this person (recurring), except rules
-    // explicitly created as recurring private expenses below.
+    // Fixkosten — this person's own rules plus ALL shared rules (also the partner's,
+    // since shared rules count half for each partner), except rules explicitly
+    // created as recurring private expenses below.
     var ruleRows = rules
       .filter(function (r) {
-        return r.active && r.type === 'expense' && r.payerId === selectedPerson &&
-          r.privateExpense !== true;
+        return r.active && r.type === 'expense' && r.privateExpense !== true &&
+          (r.payerId === selectedPerson || r.shared === true);
       })
       .map(ruleRow);
     view.appendChild(sectionCard('Fixkosten (wiederkehrend)', ruleRows,
