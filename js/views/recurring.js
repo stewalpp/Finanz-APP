@@ -205,6 +205,7 @@
     var sub = intervalSub(rule);
     var payer = App.memberName(rule.payerId);
     if (payer) sub += ' · ' + payer;
+    if (rule.privateExpense === true) sub += ' · Private Ausgabe';
     main.appendChild(App.el('div', 'row-sub', sub));
 
     var trailing = App.el('div', 'row-trailing');
@@ -271,18 +272,21 @@
 
   // ---------------------------------------------------------------- editor
 
-  // defaults (optional): { type, payerId } to preset a NEW rule (used by the Persönlich tab)
+  // defaults (optional): { type, payerId, shared, category, title } to preset a NEW rule
+  // (used by the Persönlich tab)
   function openEditor(rule, defaults) {
     var isEdit = !!rule;
     defaults = defaults || {};
     var members = getMembers();
     var defType = defaults.type === 'income' ? 'income' : 'expense';
+    var defShared = defaults.shared === true;
     var st = {
       type: isEdit ? rule.type : defType,
-      category: isEdit ? rule.category : (defType === 'income' ? 'gehalt' : 'wohnen'),
+      category: isEdit ? rule.category : (defaults.category || (defType === 'income' ? 'gehalt' : 'wohnen')),
       interval: isEdit ? rule.interval : 'monthly',
       payerId: isEdit ? rule.payerId : (defaults.payerId || 'p1'),
-      shared: isEdit ? !!rule.shared : false   // default: privat (zählt nicht in die Paar-Bilanz)
+      shared: isEdit ? !!rule.shared : defShared,   // default: privat (zählt nicht in die Paar-Bilanz)
+      privateExpense: isEdit ? rule.privateExpense === true : defaults.privateExpense === true
     };
 
     var content = App.el('div', '');
@@ -334,6 +338,7 @@
         var list = App.catList(st.type);
         var stillValid = list.some(function (c) { return c.key === st.category; });
         if (!stillValid) st.category = (st.type === 'income') ? 'gehalt' : 'wohnen';
+        if (st.type === 'income') st.privateExpense = false;
         buildCatGrid();
         updateSharedHint();
         payerLabel.textContent = (st.type === 'income') ? 'Empfänger' : 'Bezahlt von';
@@ -485,6 +490,7 @@
       if (st.shared === d.val) seg.classList.add('active');
       seg.addEventListener('click', function () {
         st.shared = d.val;
+        if (st.shared === true) st.privateExpense = false;
         sharedSegEls.forEach(function (el, i) {
           el.classList.toggle('active', sharedDefs[i].val === st.shared);
         });
@@ -530,7 +536,8 @@
         dueDay: parseInt(daySelect.value, 10) || 1,
         dueMonth: parseInt(monthSelect.value, 10) || 1,
         payerId: st.payerId,
-        shared: st.shared
+        shared: st.shared,
+        privateExpense: st.type === 'expense' && st.shared !== true && st.privateExpense === true
       };
       if (isEdit) {
         Store.updateRecurring(rule.id, data);
@@ -567,8 +574,9 @@
 
     App.showSheet({
       title: isEdit
-        ? (rule.type === 'income' ? 'Einnahme bearbeiten' : 'Fixkosten bearbeiten')
-        : (st.type === 'income' ? 'Wiederkehrende Einnahme' : 'Neue Fixkosten'),
+        ? (rule.type === 'income' ? 'Einnahme bearbeiten'
+          : (rule.privateExpense === true ? 'Private Ausgabe bearbeiten' : 'Fixkosten bearbeiten'))
+        : (defaults.title || (st.type === 'income' ? 'Wiederkehrende Einnahme' : 'Neue Fixkosten')),
       content: content
     });
 

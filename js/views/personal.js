@@ -209,13 +209,17 @@
   }
 
   // a button that opens the recurring editor preset for this person + type
-  function addRecurringBtn(label, type) {
+  function addRecurringBtn(label, type, opts) {
     var btn = App.el('button', 'btn btn-secondary', label);
     btn.type = 'button';
     btn.style.marginTop = '12px';
     btn.addEventListener('click', function () {
       if (Views.recurring && Views.recurring.openEditor) {
-        Views.recurring.openEditor(null, { type: type, payerId: selectedPerson });
+        var defaults = { type: type, payerId: selectedPerson };
+        Object.keys(opts || {}).forEach(function (key) {
+          defaults[key] = opts[key];
+        });
+        Views.recurring.openEditor(null, defaults);
       }
     });
     return btn;
@@ -253,28 +257,42 @@
       'Lege z. B. dein Gehalt als wiederkehrende Einnahme an – es erscheint dann jeden Monat automatisch.',
       addRecurringBtn('+ Wiederkehrende Einnahme', 'income')));
 
-    // Fixkosten — active expense rules of this person (recurring)
+    // Fixkosten — active expense rules of this person (recurring), except rules
+    // explicitly created as recurring private expenses below.
     var ruleRows = rules
       .filter(function (r) {
-        return r.active && r.type === 'expense' && r.payerId === selectedPerson;
+        return r.active && r.type === 'expense' && r.payerId === selectedPerson &&
+          r.privateExpense !== true;
       })
       .map(ruleRow);
     view.appendChild(sectionCard('Fixkosten (wiederkehrend)', ruleRows,
       'Noch keine Fixkosten auf ' + personName(selectedPerson) + '. Wiederkehrende Ausgaben hier anlegen.',
       addRecurringBtn('+ Fixkosten anlegen', 'expense')));
 
-    // Private Ausgaben — one-off, non-shared, non-recurring expenses this month
+    // Private Ausgaben — one-off expenses this month plus recurring private expenses.
+    var privRuleRows = rules
+      .filter(function (r) {
+        return r.active && r.type === 'expense' && r.payerId === selectedPerson &&
+          r.privateExpense === true;
+      })
+      .map(ruleRow);
     var privTxs = txs.filter(function (t) {
       return t.payerId === selectedPerson && t.type === 'expense' && t.shared !== true &&
         !t.recurringId && t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
     });
-    var privRows = privTxs.map(txRow);
+    var privRows = privRuleRows.concat(privTxs.map(txRow));
     var privCard = sectionCard('Private Ausgaben', privRows,
-      'In diesem Monat keine privaten Ausgaben.');
-    if (privTxs.length) {
+      'In diesem Monat keine privaten Ausgaben.',
+      addRecurringBtn('+ Wiederkehrende private Ausgabe', 'expense', {
+        shared: false,
+        privateExpense: true,
+        category: 'lebensmittel',
+        title: 'Wiederkehrende private Ausgabe'
+      }));
+    if (privRows.length) {
+      var countLabel = privRows.length === 1 ? 'Eintrag' : 'Einträge';
       var footer = App.el('p', 'row-sub',
-        privTxs.length + (privTxs.length === 1 ? ' Buchung' : ' Buchungen') +
-        ' · Σ ' + App.fmtEUR(sum.privateExpenseCents));
+        privRows.length + ' ' + countLabel + ' · Σ ' + App.fmtEUR(sum.privateExpenseCents));
       footer.style.textAlign = 'center';
       footer.style.padding = '10px 0 2px';
       privCard.appendChild(footer);

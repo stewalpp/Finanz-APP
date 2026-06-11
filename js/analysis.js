@@ -317,9 +317,9 @@
     };
   }
 
-  // Per-person view ("Persönlich"): that person's income, their own fixed costs (rules where
-  // payerId === personId, full monthly-equivalent), and their PRIVATE (non-shared) expenses
-  // for the month. 'ausgleich' is ignored. leftover = income − fixed − private.
+  // Per-person view ("Persönlich"): that person's income, their fixed costs, and their
+  // private expenses for the month. Recurring private expenses are counted under
+  // private expenses instead of fixed costs. 'ausgleich' is ignored.
   function personalSummary(txs, rules, personId, monthKey) {
     function monthlyEquiv(r) {
       var amt = cents(r.amountCents);
@@ -329,24 +329,32 @@
       return 0;
     }
 
-    // recurring income (Gehalt) + recurring fixed costs from this person's active rules
+    // recurring income (Gehalt), fixed costs, and recurring private expenses from
+    // this person's active rules
     var recurringIncome = 0;
     var fixed = 0;
+    var recurringPrivateExpense = 0;
     var rl = rules || [];
+    var personRules = [];
     for (var j = 0; j < rl.length; j++) {
       var r = rl[j];
       if (!r || !r.active || r.payerId !== personId) continue;
+      personRules.push(r);
       if (r.type === 'income') recurringIncome += monthlyEquiv(r);
+      else if (r.type === 'expense' && r.privateExpense === true) recurringPrivateExpense += monthlyEquiv(r);
       else if (r.type === 'expense') fixed += monthlyEquiv(r);
     }
 
     var list = txs || [];
 
-    // categories already covered by one of this person's active rules → bookings in that
-    // (type, category) are realizations of the rule and must NOT be counted on top of it.
-    var coveredByRule = {};
-    rl.forEach(function (r) {
-      if (r && r.active && r.payerId === personId) coveredByRule[r.type + '|' + r.category] = true;
+    // tx ids already represented by one of this person's rules, so they are not
+    // counted on top of the monthly rule amount.
+    var personTxs = list.filter(function (tx) {
+      return tx && tx.payerId === personId;
+    });
+    var matched = new Set();
+    upcomingForMonth(personRules, personTxs, monthKey, '0000-00-00').forEach(function (item) {
+      if (item.matchedTxId) matched.add(item.matchedTxId);
     });
 
     // one-off (non-rule) income + private (non-shared, non-rule) expenses this month
@@ -356,7 +364,7 @@
       var tx = list[i];
       if (!tx || tx.payerId !== personId || tx.category === 'ausgleich') continue;
       if (!inMonth(tx, monthKey) || tx.recurringId) continue;
-      if (coveredByRule[tx.type + '|' + tx.category]) continue;
+      if (matched.has(tx.id)) continue;
       var amt = cents(tx.amountCents);
       if (tx.type === 'income') oneOffIncome += amt;
       else if (tx.type === 'expense' && tx.shared !== true) privateExpenseCents += amt;
@@ -364,6 +372,7 @@
 
     var incomeCents = Math.round(recurringIncome) + oneOffIncome;
     fixed = Math.round(fixed);
+    privateExpenseCents += Math.round(recurringPrivateExpense);
 
     return {
       incomeCents: incomeCents,
@@ -770,7 +779,8 @@
       var cat = App.cat(rule.category);
       var payerName = memberName(rule.payerId);
       var summary = '💶 ' + String(rule.name || '') + ' – ' + App.fmtEUR(cents(rule.amountCents));
-      var description = (rule.type === 'income' ? 'Einnahme' : 'Fixkosten') +
+      var description = (rule.type === 'income' ? 'Einnahme'
+        : (rule.privateExpense === true ? 'Private Ausgabe' : 'Fixkosten')) +
         ' · Kategorie: ' + cat.label +
         ' · ' + intervalWord +
         (payerName ? ' · Zahler/in: ' + payerName : '');

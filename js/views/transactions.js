@@ -159,7 +159,8 @@
           cat.label,
           App.memberName(rule.payerId),
           rule.shared === true ? 'gemeinsam geteilt' : 'privat',
-          rule.type === 'income' ? 'einnahme' : 'fixkosten ausgabe'
+          rule.type === 'income' ? 'einnahme'
+            : (rule.privateExpense === true ? 'private ausgabe' : 'fixkosten ausgabe')
         ].join(' ').toLowerCase();
         if (ruleHay.indexOf(q) === -1) return;
       }
@@ -341,7 +342,7 @@
     dot.style.height = '7px';
     sub.appendChild(dot);
     sub.appendChild(document.createTextNode(
-      (isIncome ? 'Wiederkehrend' : 'Fixkosten') +
+      (isIncome ? 'Wiederkehrend' : (rule.privateExpense === true ? 'Private Ausgabe' : 'Fixkosten')) +
       ' \u00b7 ' + cat.label + ' \u00b7 ' + (App.memberName(rule.payerId) || '-') +
       ' \u00b7 ' + (rule.shared === true ? 'Gemeinsam' : 'Privat')
     ));

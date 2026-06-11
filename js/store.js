@@ -176,11 +176,13 @@
   // Build a complete, Firestore-safe RecurringRule object.
   function normalizeRule(raw) {
     const amount = Math.round(Number(raw.amountCents));
+    const type = raw.type === 'income' ? 'income' : 'expense';
     const interval = raw.interval === 'quarterly' || raw.interval === 'yearly' ? raw.interval : 'monthly';
+    const shared = !!raw.shared;
     return {
       id: typeof raw.id === 'string' && raw.id ? raw.id : App.uid(),
       name: typeof raw.name === 'string' ? raw.name : '',
-      type: raw.type === 'income' ? 'income' : 'expense',
+      type: type,
       amountCents: isFinite(amount) ? amount : 0,
       category: typeof raw.category === 'string' && raw.category ? raw.category : 'sonstiges',
       interval: interval,
@@ -190,7 +192,8 @@
         ? raw.anchorMonth
         : currentMonthKey(),
       payerId: raw.payerId === 'p2' ? 'p2' : 'p1',
-      shared: !!raw.shared,
+      shared: shared,
+      privateExpense: type === 'expense' && !shared && raw.privateExpense === true,
       active: raw.active !== false,
       source: raw.source === 'detected' ? 'detected' : 'manual',
       createdAt: typeof raw.createdAt === 'string' && raw.createdAt ? raw.createdAt : nowISO(),
