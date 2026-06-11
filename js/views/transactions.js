@@ -367,19 +367,18 @@
     typeGroup.appendChild(segType);
     content.appendChild(typeGroup);
 
-    // --- amount ---
+    // --- amount (built here, appended lower down with the other fields) ---
     var amountGroup = App.el('div', 'form-group');
+    amountGroup.appendChild(App.el('div', 'form-label', 'Betrag (€)'));
     var amountInput = document.createElement('input');
     amountInput.type = 'text';
-    amountInput.className = 'amount-input';
+    amountInput.className = 'input amount-field';
     amountInput.inputMode = 'decimal';
     amountInput.placeholder = '0,00';
     amountInput.autocomplete = 'off';
     amountInput.setAttribute('aria-label', 'Betrag in Euro');
     if (isEdit) amountInput.value = centsToInput(tx.amountCents);
-    else amountInput.setAttribute('autofocus', '');
     amountGroup.appendChild(amountInput);
-    content.appendChild(amountGroup);
 
     // --- category grid ---
     var catGroup = App.el('div', 'form-group');
@@ -409,6 +408,9 @@
       });
     }
     buildCatGrid();
+
+    // amount sits here, grouped with the other fields
+    content.appendChild(amountGroup);
 
     // --- date ---
     var dateGroup = App.el('div', 'form-group');
@@ -545,11 +547,6 @@
       content: content
     });
 
-    if (!isEdit) {
-      setTimeout(function () {
-        try { amountInput.focus(); } catch (e) { /* focus is best-effort */ }
-      }, 300);
-    }
   }
 
   window.Views.transactions = {

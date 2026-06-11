@@ -1433,3 +1433,64 @@ textarea.input {
   font-size: 13px;
   color: var(--text-2);
 }
+
+/* Sheet drag-to-dismiss grab zone (handle + header) */
+.sheet-grab {
+  cursor: grab;
+  margin: 0 -16px;          /* full-width grab area */
+  padding: 0 16px;
+}
+.sheet-grab:active {
+  cursor: grabbing;
+}
+.sheet-handle {
+  transition: background-color 0.15s ease;
+}
+.sheet-grab:active .sheet-handle {
+  background: var(--text-3);
+}
+
+/* Gold-standard micro-interactions */
+.cat-chip,
+.chip,
+.segment {
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+              box-shadow 0.18s ease, transform 0.12s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+.cat-chip:active,
+.chip:active {
+  transform: scale(0.94);
+}
+.cat-icon {
+  transition: transform 0.12s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+.list-row:active .cat-icon {
+  transform: scale(0.92);
+}
+.icon-btn:active,
+.month-nav-btn:active {
+  transform: scale(0.9);
+}
+.fab {
+  transition: transform 0.18s cubic-bezier(0.3, 0.9, 0.4, 1), box-shadow 0.2s ease;
+}
+.fab:active {
+  transform: scale(0.9);
+}
+/* gentle staggered fade-in for grouped lists & cards inside a view */
+.view > .card,
+.view > .list-group,
+.view > .section-title {
+  animation: rise-soft 0.34s cubic-bezier(0.22, 0.7, 0.2, 1) both;
+}
+@keyframes rise-soft {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* amount field — a normal form field, just slightly emphasised */
+.amount-field {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

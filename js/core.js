@@ -253,7 +253,69 @@
 
   /* ---------------- bottom sheet ---------------- */
 
-  var sheetState = { open: false, onClose: null };
+  var sheetState = { open: false, onClose: null, sheet: null, backdrop: null, gen: 0 };
+
+  function teardownSheet() {
+    var root = document.getElementById('sheet-root');
+    if (root) root.innerHTML = '';
+    document.body.style.overflow = '';
+    var wasOpen = sheetState.open;
+    var cb = sheetState.onClose;
+    sheetState.open = false;
+    sheetState.onClose = null;
+    sheetState.sheet = null;
+    sheetState.backdrop = null;
+    if (wasOpen && cb) {
+      try { cb(); } catch (err) { console.error(err); }
+    }
+  }
+
+  // Drag the sheet down by its grab zone (handle + header) to dismiss.
+  function enableSheetDrag(sheet, grab) {
+    var startY = 0, dy = 0, active = false;
+    grab.style.touchAction = 'none';
+
+    grab.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (sheet.scrollTop > 0) return;            // near top only → otherwise let it scroll
+      startY = e.clientY; dy = 0; active = true;
+      sheet.style.animation = 'none';             // cancel the open animation if still running
+      sheet.style.transition = 'none';
+      try { grab.setPointerCapture(e.pointerId); } catch (err) { /* not critical */ }
+      grab.addEventListener('pointermove', onMove);
+      grab.addEventListener('pointerup', onUp);
+      grab.addEventListener('pointercancel', onUp);
+    });
+
+    function onMove(e) {
+      if (!active) return;
+      dy = e.clientY - startY;
+      if (dy < 0) dy = dy * 0.18;                 // resist upward pull
+      sheet.style.transform = 'translateY(' + dy + 'px)';
+      if (sheetState.backdrop) {
+        sheetState.backdrop.style.opacity = String(Math.max(0, 1 - Math.max(0, dy) / 420));
+      }
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onUp() {
+      grab.removeEventListener('pointermove', onMove);
+      grab.removeEventListener('pointerup', onUp);
+      grab.removeEventListener('pointercancel', onUp);
+      if (!active) return;
+      active = false;
+      if (dy > 110) {
+        App.closeSheet();                         // continues the slide-down from here
+      } else {
+        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transform = 'translateY(0)';
+        if (sheetState.backdrop) {
+          sheetState.backdrop.style.transition = 'opacity 0.2s ease';
+          sheetState.backdrop.style.opacity = '';
+        }
+      }
+    }
+  }
 
   // {title, content: HTMLElement, onClose?} — replaces any open sheet, locks body scroll
   App.showSheet = function (opts) {
@@ -261,14 +323,16 @@
     var root = document.getElementById('sheet-root');
     if (!root) return;
 
-    App.closeSheet(); // replace any open sheet (fires its onClose)
+    sheetState.gen++;        // invalidate any in-flight close animation
+    teardownSheet();         // replace any open sheet immediately (fires its onClose)
 
     var backdrop = App.el('div', 'sheet-backdrop');
     var sheet = App.el('div', 'sheet');
     sheet.setAttribute('role', 'dialog');
     sheet.setAttribute('aria-modal', 'true');
 
-    sheet.appendChild(App.el('div', 'sheet-handle'));
+    var grab = App.el('div', 'sheet-grab');
+    grab.appendChild(App.el('div', 'sheet-handle'));
 
     var header = App.el('div', 'sheet-header');
     var title = App.el('h2', 'sheet-title', opts.title || '');
@@ -278,7 +342,8 @@
     close.addEventListener('click', function () { App.closeSheet(); });
     header.appendChild(title);
     header.appendChild(close);
-    sheet.appendChild(header);
+    grab.appendChild(header);
+    sheet.appendChild(grab);
 
     if (opts.content) sheet.appendChild(opts.content);
 
@@ -290,19 +355,25 @@
 
     sheetState.open = true;
     sheetState.onClose = typeof opts.onClose === 'function' ? opts.onClose : null;
+    sheetState.sheet = sheet;
+    sheetState.backdrop = backdrop;
+
+    enableSheetDrag(sheet, grab);
   };
 
+  // Animated close (slide down + backdrop fade), then teardown. Falls back to instant.
   App.closeSheet = function () {
-    var root = document.getElementById('sheet-root');
-    if (root) root.innerHTML = '';
-    document.body.style.overflow = '';
-    var wasOpen = sheetState.open;
-    var cb = sheetState.onClose;
-    sheetState.open = false;
-    sheetState.onClose = null;
-    if (wasOpen && cb) {
-      try { cb(); } catch (err) { console.error(err); }
+    var sheet = sheetState.sheet;
+    var backdrop = sheetState.backdrop;
+    if (!sheetState.open || !sheet) { teardownSheet(); return; }
+    var gen = ++sheetState.gen;
+    sheet.style.transition = 'transform 0.28s cubic-bezier(0.4, 0, 0.6, 1)';
+    sheet.style.transform = 'translateY(100%)';
+    if (backdrop) {
+      backdrop.style.transition = 'opacity 0.28s ease';
+      backdrop.style.opacity = '0';
     }
+    setTimeout(function () { if (sheetState.gen === gen) teardownSheet(); }, 300);
   };
 
   /* ---------------- confirm alert (iOS style) ---------------- */

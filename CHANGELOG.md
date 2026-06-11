@@ -6,6 +6,15 @@ Versionsmarker für installierte PWAs.)
 
 ## 2026-06-11
 
+- **Bottom-Sheet: Runterwischen zum Schließen + animiertes Schließen.** Sheets lassen sich am
+  Griff/Header nach unten wischen (Snap-back bei kurzem Zug), Backdrop-Tap und ✕ schließen jetzt
+  ebenfalls mit Slide-down-Animation. (`core.js`, `style.css`)
+- **Buchungs-Editor: Betragsfeld nach unten** zu den anderen Feldern verschoben (Typ → Kategorie →
+  Betrag → Datum → …), als normales beschriftetes Feld. (`transactions.js`)
+- **Animationen aufpoliert:** weichere Karten-/Listen-Einblendung, taktiles Press-Feedback auf
+  Chips/Icons/FAB, Sheet-Federkurven. (`style.css`)
+- **Übersicht + Persönlich sind jetzt die ersten beiden Tabs** (das Herzstück der App). (`index.html`)
+  SW-Cache `v11`.
 - **Persönlich: wiederkehrende Ein-/Ausgaben direkt anlegen.** Eigene Abschnitte „Gehalt &
   wiederkehrende Einnahmen" und „Fixkosten (wiederkehrend)" mit ↻-Markierung und „+ Hinzufügen"-Buttons,
   die den Regel-Editor passend vorbelegt öffnen (Einnahme/Ausgabe + Person). Einmal angelegt,
