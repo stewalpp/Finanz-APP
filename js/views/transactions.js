@@ -12,6 +12,9 @@
     category: 'all'    // 'all' | category key
   };
 
+  // closer of the currently open swipe cell (only one open at a time)
+  var openSwipe = null;
+
   var SVG_CHEVRON_LEFT =
     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -225,7 +228,14 @@
       wrap.appendChild(App.el('div', 'section-title', App.fmtDateShort(g.date)));
       var listGroup = App.el('div', 'list-group');
       g.items.forEach(function (tx) {
-        listGroup.appendChild(buildTxRow(tx));
+        listGroup.appendChild(makeSwipeable(
+          buildTxRow(tx),
+          function () { openEditor(tx); },
+          function () {
+            Store.deleteTransaction(tx.id);
+            App.toast('Buchung gelöscht');
+          }
+        ));
       });
       wrap.appendChild(listGroup);
     });
@@ -266,10 +276,106 @@
     row.appendChild(icon);
     row.appendChild(main);
     row.appendChild(trailing);
-    row.addEventListener('click', function () {
-      openEditor(tx);
-    });
     return row;
+  }
+
+  // Wrap a list row so it can be swiped left to reveal a red "Löschen" action.
+  // onTap fires on a normal tap (when closed); onDelete on the action or a full swipe.
+  function makeSwipeable(rowEl, onTap, onDelete) {
+    var ACTION_W = 88;
+    var cell = App.el('div', 'swipe-cell');
+    var action = App.el('button', 'swipe-action', 'Löschen');
+    action.type = 'button';
+    action.setAttribute('aria-label', 'Buchung löschen');
+    cell.appendChild(action);
+    cell.appendChild(rowEl);
+
+    var open = false;
+    var startX = 0, startY = 0, curX = 0, base = 0;
+    var dragging = false, decided = false, suppressClick = false;
+
+    function setX(x) {
+      curX = x;
+      rowEl.style.transform = x ? 'translateX(' + x + 'px)' : '';
+    }
+    function openCell() {
+      open = true;
+      cell.classList.remove('dragging');
+      setX(-ACTION_W);
+      openSwipe = closeCell;
+    }
+    function closeCell() {
+      open = false;
+      cell.classList.remove('dragging');
+      setX(0);
+      if (openSwipe === closeCell) openSwipe = null;
+    }
+    function doDelete() {
+      if (openSwipe === closeCell) openSwipe = null;
+      onDelete();
+    }
+
+    function onMove(e) {
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      if (!decided) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (Math.abs(dy) >= Math.abs(dx)) { end(); return; } // vertical → allow scroll
+        decided = true;
+        dragging = true;
+        cell.classList.add('dragging');
+        try { rowEl.setPointerCapture(e.pointerId); } catch (err) { /* not critical */ }
+        if (openSwipe && openSwipe !== closeCell) openSwipe();
+      }
+      if (e.cancelable) e.preventDefault();
+      var x = base + dx;
+      if (x > 0) x = x * 0.2;                                  // rubber-band right
+      if (x < -ACTION_W) x = -ACTION_W + (x + ACTION_W) * 0.3; // resist past the action
+      setX(x);
+    }
+    function onUp() {
+      if (dragging) {
+        cell.classList.remove('dragging');
+        suppressClick = true;
+        setTimeout(function () { suppressClick = false; }, 80);
+        if (curX < -ACTION_W * 1.5) doDelete();
+        else if (curX < -ACTION_W * 0.5) openCell();
+        else closeCell();
+      }
+      end();
+    }
+    function end() {
+      rowEl.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      dragging = false;
+      decided = false;
+    }
+
+    rowEl.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      startX = e.clientX;
+      startY = e.clientY;
+      base = open ? -ACTION_W : 0;
+      decided = false;
+      dragging = false;
+      rowEl.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+    });
+
+    rowEl.addEventListener('click', function (e) {
+      if (suppressClick) { e.preventDefault(); suppressClick = false; return; }
+      if (open) { closeCell(); return; }
+      onTap();
+    });
+
+    action.addEventListener('click', function (e) {
+      e.stopPropagation();
+      doDelete();
+    });
+
+    return cell;
   }
 
   // ---------------------------------------------------------------- editor

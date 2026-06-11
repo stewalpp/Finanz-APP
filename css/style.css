@@ -403,6 +403,47 @@ button {
   background: var(--bg-input);
 }
 
+/* Swipe-to-delete (iOS style): a cell wraps the row over a red action behind it */
+.swipe-cell {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-cell + .swipe-cell {
+  border-top: 0.5px solid var(--sep);
+}
+
+.swipe-action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--red);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.swipe-cell > .list-row {
+  position: relative;
+  background: var(--bg-card);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+.swipe-cell.dragging > .list-row {
+  transition: none;
+}
+
 .row-main {
   display: flex;
   flex-direction: column;
