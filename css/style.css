@@ -1496,7 +1496,120 @@ textarea.input {
 }
 
 /* --------------------------------------------------------------------------
-   25. Apple Liquid Glass refresh
+   25. Ledger row fit fixes
+   -------------------------------------------------------------------------- */
+
+.list-row {
+  min-width: 0;
+}
+
+.swipe-action {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+}
+
+.swipe-cell.dragging .swipe-action,
+.swipe-cell.open .swipe-action {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.row-trailing {
+  min-width: 0;
+  max-width: 42%;
+}
+
+.row-trailing .amount-pos,
+.row-trailing .amount-neg {
+  display: block;
+  max-width: min(42vw, 150px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rule-entry-row {
+  gap: 10px;
+}
+
+.rule-entry-row .row-main {
+  flex-basis: 0;
+}
+
+.rule-entry-row .row-trailing {
+  max-width: 110px;
+}
+
+.rule-entry-row > .btn-small {
+  flex: 0 0 auto;
+  min-width: 88px;
+  margin-left: 0 !important;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+@media (max-width: 420px) {
+  .list-row {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .cat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+  }
+
+  .row-title {
+    font-size: 15px;
+  }
+
+  .row-sub {
+    font-size: 12px;
+  }
+
+  .row-trailing {
+    max-width: 37%;
+  }
+
+  .row-trailing .amount-pos,
+  .row-trailing .amount-neg {
+    max-width: 112px;
+  }
+
+  .rule-entry-row {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    column-gap: 10px;
+    row-gap: 4px;
+  }
+
+  .rule-entry-row .cat-icon {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .rule-entry-row .row-main {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .rule-entry-row .row-trailing {
+    grid-column: 3;
+    grid-row: 1;
+    max-width: 96px;
+  }
+
+  .rule-entry-row > .btn-small {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
+    min-width: 86px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   26. Apple Liquid Glass refresh
    -------------------------------------------------------------------------- */
 
 :root {

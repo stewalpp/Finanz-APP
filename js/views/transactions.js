@@ -331,7 +331,7 @@
     var rule = item.rule;
     var cat = App.cat(rule.category);
     var isIncome = rule.type === 'income';
-    var row = App.el('div', 'list-row');
+    var row = App.el('div', 'list-row rule-entry-row');
     row.setAttribute('role', 'button');
     row.style.boxShadow = 'inset 4px 0 0 0 var(--orange)';
     row.style.background = 'color-mix(in srgb, var(--orange) 8%, var(--bg-card))';
@@ -403,16 +403,19 @@
     function openCell() {
       open = true;
       cell.classList.remove('dragging');
+      cell.classList.add('open');
       setX(-ACTION_W);
       openSwipe = closeCell;
     }
     function closeCell() {
       open = false;
       cell.classList.remove('dragging');
+      cell.classList.remove('open');
       setX(0);
       if (openSwipe === closeCell) openSwipe = null;
     }
     function doDelete() {
+      cell.classList.remove('open');
       if (openSwipe === closeCell) openSwipe = null;
       onDelete();
     }
