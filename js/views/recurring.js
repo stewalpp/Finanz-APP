@@ -264,6 +264,7 @@
     nameInput.placeholder = 'Name (z. B. Miete, Netflix …)';
     nameInput.autocomplete = 'off';
     nameInput.value = isEdit ? (rule.name || '') : '';
+    var lastAutoName = ''; // tracks auto-filled value so typing wins over auto-fill
     nameGroup.appendChild(nameInput);
     content.appendChild(nameGroup);
 
@@ -334,6 +335,13 @@
             el.classList.remove('active');
           });
           chip.classList.add('active');
+          // Pre-fill the name with the category label as long as the user
+          // hasn't typed an own name (empty or still a previous auto-fill).
+          var current = nameInput.value.trim();
+          if (!current || current === lastAutoName) {
+            nameInput.value = c.label;
+            lastAutoName = c.label;
+          }
         });
         catGrid.appendChild(chip);
       });
