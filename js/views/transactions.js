@@ -5,11 +5,11 @@
   window.Views = window.Views || {};
 
   // ---- module-level state (persists across re-renders) ----
+  // Buchungen zeigt ausschließlich GEMEINSAME (shared) Buchungen. Private Buchungen
+  // leben im Tab „Persönlich". Daher keine Personen-/Kategorie-Filter mehr.
   var state = {
     month: null,       // 'YYYY-MM' — lazily initialized to current month
-    search: '',
-    person: 'all',     // 'all' | 'p1' | 'p2'
-    category: 'all'    // 'all' | category key
+    search: ''
   };
 
   // closer of the currently open swipe cell (only one open at a time)
@@ -40,6 +40,14 @@
     ];
   }
 
+  function memberColor(id) {
+    var members = getMembers();
+    for (var i = 0; i < members.length; i++) {
+      if (members[i].id === id) return members[i].color || 'var(--gray)';
+    }
+    return 'var(--gray)';
+  }
+
   // ---------------------------------------------------------------- render
 
   function render(root) {
@@ -51,7 +59,6 @@
 
     view.appendChild(buildMonthNav(root));
     view.appendChild(buildSearchbar(listWrap));
-    view.appendChild(buildChipRow(root));
     view.appendChild(listWrap);
     renderList(listWrap);
 
@@ -103,89 +110,14 @@
     return bar;
   }
 
-  function buildChipRow(root) {
-    var row = App.el('div', 'chip-row');
-    var members = getMembers();
-
-    var personChips = [{ id: 'all', name: 'Alle' }];
-    members.forEach(function (m) {
-      personChips.push({ id: m.id, name: m.name });
-    });
-
-    personChips.forEach(function (p) {
-      var chip = App.el('button', 'chip', p.name);
-      chip.type = 'button';
-      if (state.person === p.id) chip.classList.add('active');
-      chip.addEventListener('click', function () {
-        state.person = p.id;
-        render(root);
-      });
-      row.appendChild(chip);
-    });
-
-    var catChip = App.el('button', 'chip');
-    catChip.type = 'button';
-    if (state.category !== 'all') {
-      var c = App.cat(state.category);
-      catChip.textContent = c.emoji + ' ' + c.label + ' ▾';
-      catChip.classList.add('active');
-    } else {
-      catChip.textContent = 'Kategorie ▾';
-    }
-    catChip.addEventListener('click', function () {
-      openCategoryFilterSheet(root);
-    });
-    row.appendChild(catChip);
-
-    return row;
-  }
-
-  function openCategoryFilterSheet(root) {
-    var content = App.el('div', '');
-    var group = App.el('div', 'list-group');
-
-    function addRow(key, emoji, label, color) {
-      var row = App.el('div', 'list-row');
-      row.setAttribute('role', 'button');
-      var icon = App.el('div', 'cat-icon', emoji);
-      icon.style.background = color + '2E';
-      var main = App.el('div', 'row-main');
-      main.appendChild(App.el('div', 'row-title', label));
-      row.appendChild(icon);
-      row.appendChild(main);
-      if (state.category === key) {
-        var check = App.el('div', 'row-trailing', '✓');
-        check.style.color = 'var(--tint)';
-        check.style.fontWeight = '600';
-        row.appendChild(check);
-      }
-      row.addEventListener('click', function () {
-        state.category = key;
-        App.closeSheet();
-        render(root);
-      });
-      group.appendChild(row);
-    }
-
-    addRow('all', '📂', 'Alle Kategorien', '#8E8E93');
-    Object.keys(App.CATEGORIES).forEach(function (key) {
-      if (key === 'ausgleich') return;
-      var c = App.CATEGORIES[key];
-      addRow(key, c.emoji, c.label, c.color);
-    });
-
-    content.appendChild(group);
-    App.showSheet({ title: 'Kategorie wählen', content: content });
-  }
-
   // ------------------------------------------------------------------ list
 
+  // Only SHARED transactions (the joint ledger). 'ausgleich' has shared:false → excluded.
   function getFiltered() {
     var q = state.search.trim().toLowerCase();
     return Store.getTransactions().filter(function (tx) {
+      if (tx.shared !== true) return false;
       if (App.monthKey(tx.date) !== state.month) return false;
-      if (state.person !== 'all' && tx.payerId !== state.person) return false;
-      if (state.category !== 'all' && tx.category !== state.category) return false;
       if (q) {
         var cat = App.cat(tx.category);
         var hay = ((tx.note || '') + ' ' + cat.label + ' ' + App.memberName(tx.payerId)).toLowerCase();
@@ -195,20 +127,44 @@
     });
   }
 
+  // Live total card — always visible, recomputed on every render/search/data change.
+  function buildTotalCard(txs) {
+    var expenseSum = txs.reduce(function (sum, tx) {
+      return tx.type === 'expense' ? sum + tx.amountCents : sum;
+    }, 0);
+    var incomeSum = txs.reduce(function (sum, tx) {
+      return tx.type === 'income' ? sum + tx.amountCents : sum;
+    }, 0);
+
+    var card = App.el('div', 'card hero-card');
+    card.appendChild(App.el('div', 'card-title', 'Gemeinsame Ausgaben · ' + App.fmtMonth(state.month)));
+    var big = App.el('div', 'hero-amount', App.fmtEUR(expenseSum));
+    card.appendChild(big);
+    var n = txs.length;
+    var subText = (n === 1 ? '1 gemeinsame Buchung' : n + ' gemeinsame Buchungen');
+    if (incomeSum > 0) subText += ' · Einnahmen ' + App.fmtEUR(incomeSum);
+    var sub = App.el('div', 'hero-sub', subText);
+    card.appendChild(sub);
+    return card;
+  }
+
   function renderList(wrap) {
     wrap.innerHTML = '';
     var txs = getFiltered();
 
+    // live total always on top
+    wrap.appendChild(buildTotalCard(txs));
+
     if (!txs.length) {
-      var hasFilter = state.search.trim() !== '' || state.person !== 'all' || state.category !== 'all';
+      var hasSearch = state.search.trim() !== '';
       var empty = App.el('div', 'empty-state');
       var em = App.el('span', '', '🧾');
       em.style.fontSize = '40px';
       em.style.display = 'block';
       empty.appendChild(em);
-      empty.appendChild(App.el('p', '', hasFilter
-        ? 'Keine Treffer. Passe Suche oder Filter an.'
-        : 'Noch keine Buchungen in diesem Monat. Tippe auf +, um die erste anzulegen.'));
+      empty.appendChild(App.el('p', '', hasSearch
+        ? 'Keine Treffer für deine Suche.'
+        : 'Noch keine gemeinsamen Buchungen in diesem Monat. Tippe auf + und wähle „Gemeinsam“.'));
       wrap.appendChild(empty);
       return;
     }
@@ -239,17 +195,6 @@
       });
       wrap.appendChild(listGroup);
     });
-
-    // month summary footer
-    var expenseSum = txs.reduce(function (sum, tx) {
-      return (tx.type === 'expense' && tx.category !== 'ausgleich') ? sum + tx.amountCents : sum;
-    }, 0);
-    var label = (txs.length === 1 ? '1 Buchung' : txs.length + ' Buchungen') +
-      ' · Σ Ausgaben ' + App.fmtEUR(expenseSum);
-    var footer = App.el('p', 'row-sub', label);
-    footer.style.textAlign = 'center';
-    footer.style.padding = '14px 0 4px';
-    wrap.appendChild(footer);
   }
 
   function buildTxRow(tx) {
@@ -262,9 +207,18 @@
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', tx.note || cat.label));
-    var sub = cat.label + ' · ' + (App.memberName(tx.payerId) || '–');
-    if (tx.shared) sub += ' · geteilt';
-    main.appendChild(App.el('div', 'row-sub', sub));
+    // all rows here are shared → emphasize WHO booked it, with their colour dot
+    var subRow = App.el('div', 'row-sub');
+    subRow.style.display = 'flex';
+    subRow.style.alignItems = 'center';
+    subRow.style.gap = '6px';
+    var dot = App.el('span', 'dot');
+    dot.style.background = memberColor(tx.payerId);
+    dot.style.width = '7px';
+    dot.style.height = '7px';
+    subRow.appendChild(dot);
+    subRow.appendChild(document.createTextNode(cat.label + ' · ' + (App.memberName(tx.payerId) || '–')));
+    main.appendChild(subRow);
 
     var trailing = App.el('div', 'row-trailing');
     if (tx.type === 'income') {

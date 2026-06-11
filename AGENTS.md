@@ -63,7 +63,8 @@ js/analysis.js        window.Analysis: reine Rechen-Funktionen (kein DOM, kein S
 js/store.js           window.Store: zentrale Datenhaltung. Dual-Modus lokal (localStorage) / Cloud
                       (Firestore). Offline-first. Feuert onChange bei jeder Änderung.
 js/views/dashboard.js     Views.dashboard   — „Übersicht"
-js/views/transactions.js  Views.transactions — „Buchungen" (+ openEditor; Swipe-to-Delete)
+js/views/transactions.js  Views.transactions — „Buchungen": NUR gemeinsame (shared) Buchungen,
+                      Live-Summe oben, Swipe-to-Delete (+ openEditor)
 js/views/recurring.js     Views.recurring   — „Fixkosten" (+ openEditor)
 js/views/personal.js      Views.personal    — „Persönlich" (pro Person, mit Steffen/Lisa-Umschalter)
 js/views/insights.js      Views.insights    — „Analyse"
@@ -157,6 +158,8 @@ Diagrammen und Tipps **ausgenommen** — nur `Analysis.coupleBalance` nutzt sie.
 ## 10. Funktionsstand & Erweiterungen seit SPEC.md
 
 Über die ursprüngliche `SPEC.md` hinaus bereits umgesetzt (siehe `CHANGELOG.md`):
+- **Buchungen zeigt nur gemeinsame (shared) Buchungen** mit Live-Summe; privat lebt unter „Persönlich".
+  Privat/Gemeinsam ist die zentrale Achse: gemeinsam → Buchungen + Paar-Bilanz, privat → Persönlich.
 - Tab **„Persönlich"** (`personal.js`) mit Steffen/Lisa-Umschalter: Gehalt, eigene Fixkosten,
   private Ausgaben pro Person; `Analysis.personalSummary()`. Tab-Leiste = 6 Tabs.
 - Neue Kategorie **„Kredite"** (`kredite`).

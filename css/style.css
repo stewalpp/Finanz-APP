@@ -1354,3 +1354,82 @@ textarea.input {
     scroll-behavior: auto !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   24. Design refresh — elevated Apple look (later source order → overrides)
+   -------------------------------------------------------------------------- */
+
+/* Cards & lists: a touch larger radius for a softer, more modern feel */
+.card,
+.list-group {
+  border-radius: 18px;
+}
+
+/* Money & headline figures: aligned, tabular numerals everywhere */
+.amount-pos,
+.amount-neg,
+.stat-value,
+.hero-amount,
+.month-nav-title {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Large title: a hair tighter for that SF-display feel */
+.large-title {
+  letter-spacing: -0.5px;
+}
+
+/* Tactile, springy press feedback on buttons */
+.btn {
+  border-radius: 14px;
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+
+.btn:active {
+  transform: scale(0.975);
+  opacity: 0.85;
+}
+
+/* Active tab label a touch more confident */
+.tab-item.active span {
+  font-weight: 600;
+}
+
+/* Smoother view entrance: gentle rise + fade */
+.view {
+  animation: view-rise 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes view-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Section titles: a touch more refined tracking */
+.section-title {
+  letter-spacing: 0.05em;
+}
+
+/* Hero / live-total card (Buchungen) — prominent, gently tinted */
+.hero-card {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--tint) 10%, var(--bg-card)),
+      var(--bg-card) 72%);
+  border: 0.5px solid color-mix(in srgb, var(--tint) 18%, transparent);
+}
+
+.hero-amount {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  line-height: 1.05;
+  margin: 4px 0 3px;
+  color: var(--text);
+}
+
+.hero-sub {
+  font-size: 13px;
+  color: var(--text-2);
+}

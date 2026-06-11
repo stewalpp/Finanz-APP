@@ -6,6 +6,13 @@ Versionsmarker für installierte PWAs.)
 
 ## 2026-06-11
 
+- **Buchungen = nur gemeinsame Buchungen.** Der Tab zeigt jetzt ausschließlich als „gemeinsam"
+  markierte Buchungen — mit Personen-Farbpunkt + Name (wer gebucht hat) und einer stets sichtbaren
+  **Live-Summe** (Hero-Karte) oben. Personen- und Kategorie-Filter entfallen; private Buchungen leben
+  im Tab „Persönlich". (`transactions.js`)
+- **Design-Refresh (edlerer Apple-Look):** größere Kartenradien, getönte Hero-Karte, tabellarische
+  Ziffern, geschmeidigerer View-Übergang (Rise+Fade), taktiles Button-Feedback, feinere Typografie.
+  (`style.css`; SW-Cache `v8`)
 - **Paar-Bilanz zuverlässiger: klare Privat/Gemeinsam-Auswahl.** In Buchungs- und Fixkosten-Editor
   ersetzt ein deutliches Segmented „Privat / Gemeinsam" den alten Schalter — jetzt auch für
   **Einnahmen**. Standard ist **Privat**, damit private Buchungen die Bilanz nicht mehr versehentlich
