@@ -406,11 +406,21 @@
           intervalSegEls[t.key].classList.toggle('active', t.key === st.interval);
         });
         monthWrap.style.display = (st.interval === 'yearly') ? '' : 'none';
+        quarterHint.style.display = (st.interval === 'quarterly') ? '' : 'none';
       });
       intervalSegEls[d.key] = seg;
       segInterval.appendChild(seg);
     });
     intervalGroup.appendChild(segInterval);
+    // quarterly cycle is anchored at the rule's anchor month — make that visible
+    var anchorKey = isEdit && rule.anchorMonth ? rule.anchorMonth : App.monthKey(App.todayISO());
+    var quarterHint = App.el('div', 'form-label',
+      'Alle 3 Monate, beginnend im ' + App.fmtMonth(anchorKey) +
+      ' (also auch ' + App.fmtMonth(App.addMonths(anchorKey, 3)) + ', ' +
+      App.fmtMonth(App.addMonths(anchorKey, 6)) + ' …).');
+    quarterHint.style.margin = '6px 0 0';
+    quarterHint.style.display = (st.interval === 'quarterly') ? '' : 'none';
+    intervalGroup.appendChild(quarterHint);
     content.appendChild(intervalGroup);
 
     // --- due day + month (month only for yearly) ---

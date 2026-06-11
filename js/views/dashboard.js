@@ -72,16 +72,11 @@
     next.type = 'button';
     next.setAttribute('aria-label', 'Nächster Monat');
     next.appendChild(chevron('right'));
-    const atCurrent = selectedMonth >= currentMonthKey();
-    if (atCurrent) {
-      next.disabled = true;
-      next.style.opacity = '0.35';
-    } else {
-      next.addEventListener('click', function () {
-        selectedMonth = App.addMonths(selectedMonth, 1);
-        App.rerender();
-      });
-    }
+    // future months are allowed: the plan-based budget shows what will be due
+    next.addEventListener('click', function () {
+      selectedMonth = App.addMonths(selectedMonth, 1);
+      App.rerender();
+    });
 
     nav.appendChild(prev);
     nav.appendChild(title);
@@ -90,21 +85,113 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 2. Stat grid (Einnahmen / Ausgaben / Übrig)
+  // 2. Stat grid (Einnahmen / Ausgaben / Übrig) — tappable, each opens an
+  //    explanation sheet with the month's breakdown
   // ---------------------------------------------------------------------------
-  function statCard(label, cents, tone) {
+  function statCard(label, cents, tone, makeContent) {
     const stat = App.el('div', 'stat');
     stat.appendChild(App.el('div', 'stat-label', label));
     stat.appendChild(App.el('div', 'stat-value ' + tone, App.fmtEUR(cents)));
+    if (makeContent) {
+      stat.setAttribute('role', 'button');
+      stat.setAttribute('aria-label', label + ' erklären');
+      stat.appendChild(App.el('span', 'info-glyph stat-hint', 'i'));
+      stat.addEventListener('click', function () {
+        App.showSheet({ title: label + ' · ' + App.fmtMonth(selectedMonth), content: makeContent() });
+      });
+    }
     return stat;
   }
 
-  function buildStatGrid(summary) {
+  // up to maxRows label/value rows for the given bookings, then a "+ n weitere" line
+  function txRows(list, tone) {
+    const MAX = 8;
+    const blocks = list.slice(0, MAX).map(function (tx) {
+      const cat = App.cat(tx.category);
+      return { row: [
+        (tx.note || cat.label) + ' · ' + (App.memberName(tx.payerId) || '–'),
+        (tone === 'pos' ? '+' : '−') + App.fmtEUR(tx.amountCents),
+        tone
+      ] };
+    });
+    if (list.length > MAX) {
+      blocks.push({ p: '+ ' + (list.length - MAX) + ' weitere Buchungen' });
+    }
+    return blocks;
+  }
+
+  function buildStatGrid(summary, txs, budget) {
+    const monthTxs = txs.filter(function (t) {
+      return App.monthKey(t.date) === selectedMonth && t.category !== 'ausgleich';
+    });
+
     const grid = App.el('div', 'stat-grid');
     grid.style.marginBottom = '14px';
-    grid.appendChild(statCard('Einnahmen', summary.incomeCents, 'pos'));
-    grid.appendChild(statCard('Ausgaben', summary.expenseCents, 'neg'));
-    grid.appendChild(statCard('Übrig', summary.savedCents, summary.savedCents >= 0 ? 'pos' : 'neg'));
+
+    grid.appendChild(statCard('Einnahmen', summary.incomeCents, 'pos', function () {
+      const incomeTxs = monthTxs.filter(function (t) { return t.type === 'income'; });
+      return App.infoContent([].concat(
+        txRows(incomeTxs, 'pos'),
+        [
+          { hr: true },
+          { row: ['Gesamt', App.fmtEUR(summary.incomeCents), 'pos'] },
+          { p: 'Gezählt werden alle in diesem Monat gebuchten Einnahmen – private und gemeinsame. ' +
+               'Geplante, noch nicht gebuchte Einnahmen aus Regeln (z. B. Gehalt) fließen stattdessen ' +
+               'in „Zusammen frei verfügbar“ ein.' }
+        ]
+      ));
+    }));
+
+    grid.appendChild(statCard('Ausgaben', summary.expenseCents, 'neg', function () {
+      const catBlocks = summary.byCategory.map(function (c) {
+        const cat = App.cat(c.category);
+        return { row: [cat.emoji + ' ' + cat.label, '−' + App.fmtEUR(c.cents), 'neg'] };
+      });
+      return App.infoContent([].concat(
+        catBlocks,
+        [
+          { hr: true },
+          { row: ['Gesamt', App.fmtEUR(summary.expenseCents), 'neg'] },
+          { p: 'Alle gebuchten Konsum-Ausgaben dieses Monats – private und gemeinsame. ' +
+               'Sparraten zählen NICHT dazu (das ist Vermögensaufbau, siehe „Gespart“), ' +
+               'Ausgleichszahlungen ebenfalls nicht. Die Diagramme weiter unten zeigen ' +
+               'die Aufteilung in gemeinsam und pro Person.' }
+        ]
+      ));
+    }));
+
+    grid.appendChild(statCard('Gespart', summary.savingsCents, 'saving', function () {
+      const savingsTxs = monthTxs.filter(function (t) {
+        return t.type === 'expense' && t.category === 'sparen';
+      });
+      return App.infoContent([].concat(
+        txRows(savingsTxs, 'saving'),
+        [
+          { hr: true },
+          { row: ['Gesamt', App.fmtEUR(summary.savingsCents), 'saving'] },
+          { p: 'Geld, das ihr in „Sparen & Anlegen“ gesteckt habt (ETF, Sparkonto …). Das ist ' +
+               'kein Konsum, sondern Vermögensaufbau – deshalb zählt es nicht zu den Ausgaben, ' +
+               'sondern steht hier separat. Geplante Sparraten aus Regeln stehen in „Zusammen ' +
+               'frei verfügbar“.' }
+        ]
+      ));
+    }));
+
+    const savedTone = summary.savedCents >= 0 ? 'pos' : 'neg';
+    grid.appendChild(statCard('Übrig', summary.savedCents, savedTone, function () {
+      return App.infoContent([
+        { row: ['Gebuchte Einnahmen', '+' + App.fmtEUR(summary.incomeCents), 'pos'] },
+        { row: ['Gebuchte Ausgaben', '−' + App.fmtEUR(summary.expenseCents), 'neg'] },
+        { row: ['Gespart', '−' + App.fmtEUR(summary.savingsCents), 'saving'] },
+        { hr: true },
+        { row: ['Übrig', App.fmtEUR(summary.savedCents), savedTone] },
+        { p: '„Übrig“ ist der Ist-Stand: was nach allen gebuchten Ausgaben und Sparraten von den ' +
+             'gebuchten Einnahmen bleibt. „Zusammen frei verfügbar“ (aktuell ' +
+             App.fmtEUR(budget.total.availableCents) + ') schaut dagegen nach vorn und rechnet ' +
+             'auch geplante Einnahmen und noch nicht gebuchte Fixkosten ein.' }
+      ]);
+    }));
+
     return grid;
   }
 
@@ -137,6 +224,7 @@
     v.style.fontVariantNumeric = 'tabular-nums';
     if (tone === 'pos') v.style.color = 'var(--green)';
     else if (tone === 'neg') v.style.color = 'var(--red)';
+    else if (tone === 'saving') v.style.color = 'var(--teal)';
 
     row.appendChild(l);
     row.appendChild(v);
@@ -186,12 +274,37 @@
     return wrap;
   }
 
-  function buildBudgetCard(txs, rules) {
-    const budget = Analysis.availableBudget(txs, rules, selectedMonth);
+  function buildBudgetCard(budget) {
     const t = budget.total;
 
     const card = App.el('div', 'card hero-card');
-    card.appendChild(App.el('div', 'card-title', 'Zusammen frei verfügbar · ' + App.fmtMonth(selectedMonth)));
+    card.appendChild(App.cardHead('Zusammen frei verfügbar · ' + App.fmtMonth(selectedMonth), function () {
+      const blocks = [
+        { row: ['Geplante Einnahmen', '+' + App.fmtEUR(t.plannedIncomeCents), 'pos'] },
+        { row: ['Monatliche Fixkosten', '−' + App.fmtEUR(t.fixedCents), 'neg'] }
+      ];
+      if (t.nonMonthlyDueCents > 0) {
+        blocks.push({ row: ['Quartals-/Jahreskosten (diesen Monat fällig)', '−' + App.fmtEUR(t.nonMonthlyDueCents), 'neg'] });
+      }
+      if (t.savingsCents > 0) {
+        blocks.push({ row: ['Sparraten', '−' + App.fmtEUR(t.savingsCents), 'saving'] });
+      }
+      blocks.push(
+        { row: ['Bereits ausgegeben', '−' + App.fmtEUR(t.variableSpentCents), 'neg'] },
+        { hr: true },
+        { row: ['Frei verfügbar', App.fmtEUR(t.availableCents), t.availableCents >= 0 ? 'pos' : 'neg'] },
+        { h: 'So wird gerechnet' },
+        { p: 'Geplante Einnahmen = monatliche Einnahme-Regeln (z. B. Gehalt) plus bereits gebuchte ' +
+             'einmalige Einnahmen. Monatliche Fixkosten = alle monatlichen Regeln (ohne Sparraten). ' +
+             'Quartals- und Jahreskosten zählen nur in ihrem Fälligkeitsmonat – in den anderen Monaten ' +
+             'tauchen sie gar nicht auf. Sparraten (Kategorie „Sparen & Anlegen“) sind Vermögensaufbau ' +
+             'und stehen separat. „Bereits ausgegeben“ sind Buchungen, die zu keiner Regel gehören; ' +
+             'gebuchte Fixkosten werden automatisch ihrer Regel zugeordnet und nie doppelt gezählt.' },
+        { p: 'Pro Person gilt: Gemeinsames zählt für beide je zur Hälfte – egal, wer es bezahlt. Wer ' +
+             'tatsächlich was vorgestreckt hat, regelt der Gemeinsame Topf im Tab „Buchungen“.' }
+      );
+      return App.infoContent(blocks);
+    }));
 
     // combined hero number ("wieviel wir zusammen haben")
     const big = App.el('div', 'hero-amount', App.fmtEUR(t.availableCents));
@@ -221,6 +334,9 @@
         const word = item.interval === 'quarterly' ? 'vierteljährlich' : 'jährlich';
         bd.appendChild(budgetLine('📅 ' + item.name + ' (' + word + ')', item.amountCents, '−', 'neg', true));
       });
+    }
+    if (t.savingsCents > 0) {
+      bd.appendChild(budgetLine('Sparraten', t.savingsCents, '−', 'saving', false));
     }
     bd.appendChild(budgetLine('Bereits ausgegeben', t.variableSpentCents, '−', 'neg', false));
     card.appendChild(bd);
@@ -281,7 +397,27 @@
 
   function buildBalanceCard(txs) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Gemeinsamer Topf'));
+    card.appendChild(App.cardHead('Gemeinsamer Topf', function () {
+      const bal = Analysis.coupleBalance(txs);
+      const debtor = bal.debtorId;
+      return App.infoContent([
+        { p: 'Jede Buchung, die ihr als „Gemeinsam“ markiert, landet im Topf – mit Name und Farbe ' +
+             'der Person, die sie bezahlt hat. So trägt einfach jeder ein, was er fürs Gemeinsame ausgibt.' },
+        { h: 'Stand über alle Monate' },
+        { row: ['Eingezahlt ' + (App.memberName('p1') || 'p1'), App.fmtEUR(bal.paidSharedCents.p1)] },
+        { row: ['Eingezahlt ' + (App.memberName('p2') || 'p2'), App.fmtEUR(bal.paidSharedCents.p2)] },
+        { hr: true },
+        debtor
+          ? { row: [(App.memberName(debtor) || debtor) + ' schuldet ' +
+              (App.memberName(otherMemberId(debtor)) || ''), App.fmtEUR(bal.owesCents), 'neg'] }
+          : { row: ['Offen', App.fmtEUR(0)] },
+        { p: 'Der Schuldenstand ist die Hälfte der Differenz eurer Einzahlungen – über alle Monate ' +
+             'hinweg, bereits gebuchte Ausgleichszahlungen sind verrechnet. „Ausgleichen“ bucht die ' +
+             'Rückzahlung und stellt euch auf quitt.' },
+        { p: 'Die komplette Abrechnung mit allen Topf-Buchungen findest du im Tab „Buchungen“ unter ' +
+             '„Gemeinsamer Topf“.' }
+      ]);
+    }));
 
     // contributions to the pot in the selected month
     const paid = { p1: 0, p2: 0 };
@@ -403,7 +539,15 @@
 
   function buildUpcomingCard(rules, txs) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Anstehende Fixkosten'));
+    card.appendChild(App.cardHead('Anstehende Fixkosten', function () {
+      return App.infoContent([
+        { p: 'Alle Fixkosten-Regeln, die in diesem Monat fällig sind: monatliche immer, Quartals- ' +
+             'und Jahresposten nur in ihrem Fälligkeitsmonat.' },
+        { p: '„Buchen“ erstellt daraus die echte Buchung – erst dann zählt sie in den Diagrammen ' +
+             'und im Gemeinsamen Topf. Erkennt die App eine passende Buchung von selbst, gilt die ' +
+             'Regel automatisch als bezahlt.' }
+      ]);
+    }));
 
     const upcoming = Analysis.upcomingForMonth(rules, txs, selectedMonth, App.todayISO());
     if (!upcoming.length) {
@@ -476,7 +620,15 @@
   // shared (gemeinsame) expense bookings of the month, by category
   function buildSharedCategoryCard(txs) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Gemeinsame Ausgaben nach Kategorie'));
+    card.appendChild(App.cardHead('Gemeinsame Ausgaben nach Kategorie', function () {
+      return App.infoContent([
+        { p: 'Zeigt alle in diesem Monat gebuchten Konsum-Ausgaben, die als „Gemeinsam“ markiert ' +
+             'sind, nach Kategorie – also genau das, was im Gemeinsamen Topf gelandet ist. ' +
+             'Sparraten zählen nicht dazu.' },
+        { p: 'Fixkosten erscheinen hier erst, wenn sie gebucht sind – zum Beispiel über „Buchen“ ' +
+             'bei den anstehenden Fixkosten.' }
+      ]);
+    }));
 
     const sharedTxs = txs.filter(function (t) { return t.shared === true; });
     const summary = Analysis.monthlySummary(sharedTxs, selectedMonth);
@@ -491,7 +643,15 @@
   // amount plus half of every shared booking (same 50/50 rule as everywhere)
   function buildPersonCategoryCard(txs) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Ausgaben pro Person'));
+    card.appendChild(App.cardHead('Ausgaben pro Person', function () {
+      return App.infoContent([
+        { p: 'Rechnet die gebuchten Konsum-Ausgaben des Monats pro Person zusammen: eigene ' +
+             'private Buchungen voll plus die Hälfte jeder gemeinsamen Buchung – nach demselben ' +
+             '50/50-Prinzip wie überall in der App. Sparraten zählen nicht dazu.' },
+        { p: 'Beispiel: Zahlt eine Person 462 € Camper-Kredit als „Gemeinsam“, erscheinen hier ' +
+             'bei beiden je 231 €.' }
+      ]);
+    }));
 
     const seg = App.el('div', 'segmented');
     seg.style.marginBottom = '10px';
@@ -513,7 +673,12 @@
       .concat(txs
         .filter(function (t) { return t.shared === true; })
         .map(function (t) {
-          return Object.assign({}, t, { amountCents: Math.round(t.amountCents / 2) });
+          // deterministic odd-cent split (p1 floor, p2 ceil) so that both
+          // person charts together equal the shared total exactly
+          const half = chartPerson === 'p1'
+            ? Math.floor(t.amountCents / 2)
+            : Math.ceil(t.amountCents / 2);
+          return Object.assign({}, t, { amountCents: half });
         }));
     const summary = Analysis.monthlySummary(personTxs, selectedMonth);
 
@@ -691,10 +856,11 @@
 
     const rules = Store.getRecurring();
     const summary = Analysis.monthlySummary(txs, selectedMonth);
+    const budget = Analysis.availableBudget(txs, rules, selectedMonth);
 
     view.appendChild(buildMonthNav());
-    view.appendChild(buildBudgetCard(txs, rules));   // hero: combined + per-person
-    view.appendChild(buildStatGrid(summary));
+    view.appendChild(buildBudgetCard(budget));       // hero: combined + per-person
+    view.appendChild(buildStatGrid(summary, txs, budget));
     var suggestionsCard = buildSuggestionsCard(txs, rules);
     if (suggestionsCard) view.appendChild(suggestionsCard);
     view.appendChild(buildSharedCategoryCard(txs));

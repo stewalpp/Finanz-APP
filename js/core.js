@@ -153,6 +153,50 @@
     return node;
   };
 
+  // Card header row: title on the left, optional (i) button on the right that
+  // opens an explanation sheet. makeContent (lazy) returns the sheet content.
+  App.cardHead = function (title, makeContent) {
+    var head = App.el('div', 'card-head');
+    head.appendChild(App.el('div', 'card-title', title));
+    if (typeof makeContent === 'function') {
+      var btn = App.el('button', 'info-btn');
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'Erklärung: ' + title);
+      btn.appendChild(App.el('span', 'info-glyph', 'i'));
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        App.showSheet({ title: title, content: makeContent() });
+      });
+      head.appendChild(btn);
+    }
+    return head;
+  };
+
+  // Declarative builder for explanation-sheet content. blocks:
+  //   {p: text}                       paragraph
+  //   {h: text}                       small section heading
+  //   {row: [label, value, tone?]}    label/value line; tone 'pos'|'neg'
+  //   {hr: true}                      separator line
+  App.infoContent = function (blocks) {
+    var box = App.el('div', 'info-content');
+    (blocks || []).forEach(function (b) {
+      if (!b) return;
+      if (b.p) {
+        box.appendChild(App.el('p', 'info-p', b.p));
+      } else if (b.h) {
+        box.appendChild(App.el('div', 'info-h', b.h));
+      } else if (b.row) {
+        var row = App.el('div', 'info-row');
+        row.appendChild(App.el('span', '', b.row[0]));
+        row.appendChild(App.el('span', 'info-row-value' + (b.row[2] ? ' ' + b.row[2] : ''), b.row[1]));
+        box.appendChild(row);
+      } else if (b.hr) {
+        box.appendChild(App.el('div', 'info-hr'));
+      }
+    });
+    return box;
+  };
+
   App.downloadFile = function (filename, content, mime) {
     var blob = new Blob([content], { type: mime || 'application/octet-stream' });
     var url = URL.createObjectURL(blob);

@@ -87,13 +87,20 @@
 
   /* ---------- public API ---------- */
 
+  // Money put into 'sparen' is wealth building, not consumption — it is reported
+  // separately (savingsCents) and never counted as a regular expense.
+  function isSavings(item) {
+    return item.category === 'sparen';
+  }
+
   function monthlySummary(txs, monthKey) {
     var incomeCents = 0;
-    var expenseCents = 0;
+    var expenseCents = 0;   // consumption only, savings excluded
+    var savingsCents = 0;   // transfers into 'sparen'
     var catMap = new Map();
     var byPayer = {
-      p1: { incomeCents: 0, expenseCents: 0 },
-      p2: { incomeCents: 0, expenseCents: 0 }
+      p1: { incomeCents: 0, expenseCents: 0, savingsCents: 0 },
+      p2: { incomeCents: 0, expenseCents: 0, savingsCents: 0 }
     };
     var list = txs || [];
     for (var i = 0; i < list.length; i++) {
@@ -103,6 +110,9 @@
       if (tx.type === 'income') {
         incomeCents += amt;
         if (byPayer[tx.payerId]) byPayer[tx.payerId].incomeCents += amt;
+      } else if (tx.type === 'expense' && isSavings(tx)) {
+        savingsCents += amt;
+        if (byPayer[tx.payerId]) byPayer[tx.payerId].savingsCents += amt;
       } else if (tx.type === 'expense') {
         expenseCents += amt;
         if (byPayer[tx.payerId]) byPayer[tx.payerId].expenseCents += amt;
@@ -119,8 +129,9 @@
     return {
       incomeCents: incomeCents,
       expenseCents: expenseCents,
-      savedCents: incomeCents - expenseCents,
-      byCategory: byCategory,
+      savingsCents: savingsCents,
+      savedCents: incomeCents - expenseCents - savingsCents,   // "Übrig" after everything
+      byCategory: byCategory,                                  // consumption only
       byPayer: byPayer
     };
   }
@@ -131,7 +142,7 @@
     for (var i = nMonths - 1; i >= 0; i--) {
       var mk = addMonths(endMonthKey, -i);
       index.set(mk, out.length);
-      out.push({ month: mk, incomeCents: 0, expenseCents: 0 });
+      out.push({ month: mk, incomeCents: 0, expenseCents: 0, savingsCents: 0 });
     }
     var list = txs || [];
     for (var j = 0; j < list.length; j++) {
@@ -141,6 +152,7 @@
       if (pos === undefined) continue;
       var amt = cents(tx.amountCents);
       if (tx.type === 'income') out[pos].incomeCents += amt;
+      else if (tx.type === 'expense' && isSavings(tx)) out[pos].savingsCents += amt;
       else if (tx.type === 'expense') out[pos].expenseCents += amt;
     }
     return out;
@@ -179,12 +191,13 @@
 
   // Monthly fixed costs: monthly rules only. Quarterly and yearly rules are
   // excluded — they appear as individual items in their due month instead.
+  // Savings rules ('sparen') are excluded too: they are wealth building, not costs.
   function fixedMonthlyCents(rules) {
     var sum = 0;
     var list = rules || [];
     for (var i = 0; i < list.length; i++) {
       var r = list[i];
-      if (!r || !r.active || r.type !== 'expense') continue;
+      if (!r || !r.active || r.type !== 'expense' || isSavings(r)) continue;
       sum += monthlyEquivCents(r);
     }
     return Math.round(sum);
@@ -249,12 +262,14 @@
   // "Frei verfügbar" for a month: a forward-looking, plan-based budget.
   //   plannedIncome = monthly income rules + non-rule income bookings this month
   //                   + quarterly/yearly income rules due this month
-  //   fixed         = active monthly expense rules (= fixedMonthlyCents)
-  //   nonMonthlyDue = quarterly + yearly expense rules due in this month, at full amount;
-  //                   each one is also returned in nonMonthlyItems so the UI lists it
-  //                   individually (never smoothed over the other months)
-  //   variableSpent = expense bookings this month that are NOT part of a fixed-cost rule
-  //   available     = plannedIncome − fixed − nonMonthlyDue − variableSpent
+  //   fixed         = active monthly expense rules, savings excluded (= fixedMonthlyCents)
+  //   nonMonthlyDue = quarterly + yearly NON-savings expense rules due in this month, at
+  //                   full amount; each one is also returned in nonMonthlyItems so the UI
+  //                   lists it individually (never smoothed over the other months)
+  //   savings       = 'sparen' rules (monthly + those due this month) + non-rule 'sparen'
+  //                   bookings — wealth building, shown as its own position
+  //   variableSpent = NON-savings expense bookings this month that are NOT part of a rule
+  //   available     = plannedIncome − fixed − nonMonthlyDue − savings − variableSpent
   // Bookings that belong to a rule (explicit recurringId link OR fuzzy match, same logic as
   // upcomingForMonth) are excluded from the booking loop so a fixed cost is never counted twice.
   // Per person: shared rules/bookings are split 50/50, everything else goes to its payer.
@@ -262,10 +277,10 @@
     var ruleList = rules || [];
     var txList = txs || [];
 
-    var total = { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, variableSpent: 0 };
+    var total = { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, savings: 0, variableSpent: 0 };
     var per = {
-      p1: { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, variableSpent: 0 },
-      p2: { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, variableSpent: 0 }
+      p1: { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, savings: 0, variableSpent: 0 },
+      p2: { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, savings: 0, variableSpent: 0 }
     };
     var nonMonthlyItems = [];
 
@@ -288,6 +303,8 @@
         var amt = cents(r.amountCents);
         if (r.type === 'income') {
           add('plannedIncome', amt, r.payerId, isShared);
+        } else if (r.type === 'expense' && isSavings(r)) {
+          add('savings', amt, r.payerId, isShared);
         } else if (r.type === 'expense') {
           add('nonMonthlyDue', amt, r.payerId, isShared);
           nonMonthlyItems.push({
@@ -303,6 +320,7 @@
       } else {
         var eq = monthlyEquivCents(r);
         if (r.type === 'income') add('plannedIncome', eq, r.payerId, isShared);
+        else if (r.type === 'expense' && isSavings(r)) add('savings', eq, r.payerId, isShared);
         else if (r.type === 'expense') add('fixed', eq, r.payerId, isShared);
       }
     }
@@ -319,6 +337,7 @@
       if (tx.recurringId || matched.has(tx.id)) continue;
       var txAmt = cents(tx.amountCents);
       if (tx.type === 'income') add('plannedIncome', txAmt, tx.payerId, tx.shared === true);
+      else if (tx.type === 'expense' && isSavings(tx)) add('savings', txAmt, tx.payerId, tx.shared === true);
       else if (tx.type === 'expense') add('variableSpent', txAmt, tx.payerId, tx.shared === true);
     }
 
@@ -326,13 +345,15 @@
       var pi = Math.round(o.plannedIncome);
       var fx = Math.round(o.fixed);
       var nm = Math.round(o.nonMonthlyDue);
+      var sv = Math.round(o.savings);
       var vs = Math.round(o.variableSpent);
       return {
         plannedIncomeCents: pi,
         fixedCents: fx,
         nonMonthlyDueCents: nm,
+        savingsCents: sv,
         variableSpentCents: vs,
-        availableCents: pi - fx - nm - vs
+        availableCents: pi - fx - nm - sv - vs
       };
     }
 
@@ -343,12 +364,13 @@
     };
   }
 
-  // Per-person view ("Persönlich"): that person's income, their fixed costs, and their
-  // private expenses for the month. Shared rules and shared bookings count HALF for
-  // each partner, regardless of who pays them. Quarterly and yearly rules are not
-  // smoothed — they count (at the person's share) in their due month only. Recurring
-  // private expenses are counted under private expenses instead of fixed costs.
-  // 'ausgleich' is ignored.
+  // Per-person view ("Persönlich"): that person's income, their fixed costs, their
+  // savings and their private expenses for the month. Shared rules and shared bookings
+  // count HALF for each partner, regardless of who pays them. Quarterly and yearly
+  // rules are not smoothed — they count (at the person's share) in their due month
+  // only. 'sparen' rules/bookings count under savings (wealth building), never under
+  // fixed/private. Recurring private expenses are counted under private expenses
+  // instead of fixed costs. 'ausgleich' is ignored.
   function personalSummary(txs, rules, personId, monthKey) {
     var rl = rules || [];
     var list = txs || [];
@@ -356,6 +378,7 @@
     var recurringIncome = 0;
     var fixed = 0;
     var recurringPrivateExpense = 0;
+    var savings = 0;
     var nonMonthlyDue = 0;
     var nonMonthlyItems = [];
 
@@ -372,6 +395,8 @@
         var amt = cents(r.amountCents) * share;
         if (r.type === 'income') {
           recurringIncome += amt;
+        } else if (r.type === 'expense' && isSavings(r)) {
+          savings += amt;
         } else if (r.type === 'expense') {
           nonMonthlyDue += amt;
           nonMonthlyItems.push({
@@ -385,6 +410,7 @@
       } else {
         var eq = monthlyEquivCents(r) * share;
         if (r.type === 'income') recurringIncome += eq;
+        else if (r.type === 'expense' && isSavings(r)) savings += eq;
         else if (r.type === 'expense' && r.privateExpense === true) recurringPrivateExpense += eq;
         else if (r.type === 'expense') fixed += eq;
       }
@@ -413,8 +439,11 @@
       var isSharedTx = tx.shared === true;
       if (!isSharedTx && tx.payerId !== personId) continue;
       var txAmt = cents(tx.amountCents);
+      var txShare = isSharedTx ? txAmt / 2 : txAmt;
       if (tx.type === 'income') {
-        oneOffIncome += isSharedTx ? txAmt / 2 : txAmt;
+        oneOffIncome += txShare;
+      } else if (tx.type === 'expense' && isSavings(tx)) {
+        savings += txShare;
       } else if (tx.type === 'expense') {
         if (isSharedTx) sharedVariable += txAmt / 2;
         else privateExpenseCents += txAmt;
@@ -424,6 +453,7 @@
     var incomeCents = Math.round(recurringIncome + oneOffIncome);
     fixed = Math.round(fixed);
     nonMonthlyDue = Math.round(nonMonthlyDue);
+    var savingsCents = Math.round(savings);
     privateExpenseCents = Math.round(privateExpenseCents + recurringPrivateExpense);
     var sharedVariableCents = Math.round(sharedVariable);
 
@@ -432,13 +462,16 @@
       fixedCents: fixed,
       nonMonthlyDueCents: nonMonthlyDue,
       nonMonthlyItems: nonMonthlyItems,
+      savingsCents: savingsCents,
       privateExpenseCents: privateExpenseCents,
       sharedVariableCents: sharedVariableCents,
-      leftoverCents: incomeCents - fixed - nonMonthlyDue - privateExpenseCents - sharedVariableCents
+      leftoverCents: incomeCents - fixed - nonMonthlyDue - savingsCents - privateExpenseCents - sharedVariableCents
     };
   }
 
-  // Running total of monthly savings (income − expense) over the window → "Sparverlauf".
+  // Running total of monthly savings over the window → "Sparverlauf".
+  // saved = income − consumption, i.e. leftover PLUS transfers into 'sparen' —
+  // money moved to a savings account is saved, not spent.
   function cumulativeSavings(txs, nMonths, endMonthKey) {
     var t = trend(txs, nMonths, endMonthKey);
     var run = 0;
@@ -455,41 +488,47 @@
     var t = trend(txs, n, monthKey);
     var totalExp = 0, rateSum = 0, rateCount = 0;
     t.forEach(function (m) {
-      totalExp += m.expenseCents;
+      totalExp += m.expenseCents;   // consumption only
       if (m.incomeCents > 0) {
+        // saving rate includes transfers into 'sparen' (not consumed = saved)
         rateSum += (m.incomeCents - m.expenseCents) / m.incomeCents;
         rateCount += 1;
       }
     });
-    var sum = monthlySummary(txs, monthKey);
     var fixed = fixedMonthlyCents(rules);
+    // fixed-cost ratio against PLANNED income (rules + booked one-offs) — booked
+    // income alone would overstate the ratio early in the month.
+    var plannedIncome = availableBudget(txs, rules, monthKey).total.plannedIncomeCents;
     var biggest = null;
     (txs || []).forEach(function (tx) {
-      if (!tx || tx.type !== 'expense' || tx.category === 'ausgleich' || !inMonth(tx, monthKey)) return;
+      if (!tx || tx.type !== 'expense' || tx.category === 'ausgleich' ||
+          isSavings(tx) || !inMonth(tx, monthKey)) return;
       if (!biggest || cents(tx.amountCents) > cents(biggest.amountCents)) biggest = tx;
     });
     return {
       avgExpenseCents: Math.round(totalExp / n),
       avgSavingsRate: rateCount ? Math.round((rateSum / rateCount) * 100) : 0,
-      fixedSharePct: sum.incomeCents > 0 ? Math.round((fixed / sum.incomeCents) * 100) : 0,
+      fixedSharePct: plannedIncome > 0 ? Math.round((fixed / plannedIncome) * 100) : 0,
       biggest: biggest
     };
   }
 
-  // Largest single expenses of the month.
+  // Largest single expenses of the month (consumption — savings excluded).
   function topExpenses(txs, monthKey, n) {
     var list = (txs || []).filter(function (tx) {
-      return tx && tx.type === 'expense' && tx.category !== 'ausgleich' && inMonth(tx, monthKey);
+      return tx && tx.type === 'expense' && tx.category !== 'ausgleich' &&
+        !isSavings(tx) && inMonth(tx, monthKey);
     }).slice();
     list.sort(function (a, b) { return cents(b.amountCents) - cents(a.amountCents); });
     return list.slice(0, n || 5);
   }
 
-  // Split of the month's expenses into shared vs private.
+  // Split of the month's consumption into shared vs private (savings excluded).
   function sharedVsPrivate(txs, monthKey) {
     var shared = 0, priv = 0;
     (txs || []).forEach(function (tx) {
-      if (!tx || tx.type !== 'expense' || tx.category === 'ausgleich' || !inMonth(tx, monthKey)) return;
+      if (!tx || tx.type !== 'expense' || tx.category === 'ausgleich' ||
+          isSavings(tx) || !inMonth(tx, monthKey)) return;
       if (tx.shared === true) shared += cents(tx.amountCents);
       else priv += cents(tx.amountCents);
     });
@@ -624,24 +663,25 @@
       });
     }
 
-    // 2. Savings rate current month
+    // 2. Savings rate current month — leftover PLUS transfers into 'sparen'
     if (sumCur.incomeCents > 0) {
-      var rate = sumCur.savedCents / sumCur.incomeCents;
+      var savedTotal = sumCur.savedCents + sumCur.savingsCents;
+      var rate = savedTotal / sumCur.incomeCents;
       var ratePct = Math.round(rate * 100);
       if (rate < 0.10) {
         out.push({
           emoji: '📉',
           title: 'Sparquote niedrig',
-          text: sumCur.savedCents < 0
-            ? 'Du gibst diesen Monat ' + App.fmtEUR(-sumCur.savedCents) + ' mehr aus, als reinkommt. Schau, wo du gegensteuern kannst.'
-            : 'Diesen Monat bleiben dir nur ' + ratePct + ' % deiner Einnahmen übrig. Versuch, mindestens 10 % zur Seite zu legen.',
+          text: savedTotal < 0
+            ? 'Du gibst diesen Monat ' + App.fmtEUR(-savedTotal) + ' mehr aus, als reinkommt. Schau, wo du gegensteuern kannst.'
+            : 'Diesen Monat bleiben dir nur ' + ratePct + ' % deiner Einnahmen übrig (inkl. Sparraten). Versuch, mindestens 10 % zur Seite zu legen.',
           tone: 'warn'
         });
       } else if (rate > 0.25) {
         out.push({
           emoji: '💪',
           title: 'Starke Sparquote',
-          text: 'Du legst diesen Monat ' + ratePct + ' % deiner Einnahmen zurück – richtig gut!',
+          text: 'Du legst diesen Monat ' + ratePct + ' % deiner Einnahmen zurück (Sparraten + Übriges) – richtig gut!',
           tone: 'good'
         });
       }
@@ -703,15 +743,17 @@
       });
     }
 
-    // 6. Fixed-cost share of current income > 50 %
+    // 6. Fixed-cost share of PLANNED income > 50 % (booked income alone would
+    //    overstate the ratio early in the month)
     var fixed = fixedMonthlyCents(rules);
-    if (sumCur.incomeCents > 0 && fixed > sumCur.incomeCents * 0.5) {
-      var fixedPct = Math.round((fixed / sumCur.incomeCents) * 100);
+    var plannedIncome = availableBudget(txs, rules, curKey).total.plannedIncomeCents;
+    if (plannedIncome > 0 && fixed > plannedIncome * 0.5) {
+      var fixedPct = Math.round((fixed / plannedIncome) * 100);
       out.push({
         emoji: '🏠',
         title: 'Hohe Fixkosten',
         text: 'Eure Fixkosten von ' + App.fmtEUR(fixed) + ' im Monat machen ' + fixedPct +
-          ' % eurer Einnahmen aus. Prüft, ob sich Verträge oder Tarife optimieren lassen.',
+          ' % eurer geplanten Einnahmen aus. Prüft, ob sich Verträge oder Tarife optimieren lassen.',
         tone: 'warn'
       });
     }

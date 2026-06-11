@@ -7,6 +7,7 @@
 
   const GREEN = '#30D158';
   const RED = '#FF453A';
+  const TEAL = '#00C7BE';   // savings (matches the 'sparen' category colour)
 
   // ---------------------------------------------------------------------------
   // Helpers
@@ -62,7 +63,13 @@
 
   function buildTrendCard(txs, currentMonth) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Einnahmen & Ausgaben'));
+    card.appendChild(App.cardHead('Einnahmen & Ausgaben', function () {
+      return App.infoContent([
+        { p: 'Gebuchte Einnahmen (grün), Konsum-Ausgaben (rot) und Sparraten (türkis) der ' +
+             'letzten 6 Monate im Vergleich. Sparen ist Vermögensaufbau und wird deshalb ' +
+             'getrennt von den Ausgaben gezeigt; Ausgleichszahlungen zählen gar nicht mit.' }
+      ]);
+    }));
 
     const trend = Analysis.trend(txs, 6, currentMonth);
     const data = trend.map(function (t) {
@@ -70,7 +77,8 @@
         label: monthShortLabel(t.month),
         series: [
           { value: t.incomeCents, color: GREEN },
-          { value: t.expenseCents, color: RED }
+          { value: t.expenseCents, color: RED },
+          { value: t.savingsCents, color: TEAL }
         ]
       };
     });
@@ -84,6 +92,7 @@
     legend.style.gap = '18px';
     legend.appendChild(legendItem(GREEN, 'Einnahmen'));
     legend.appendChild(legendItem(RED, 'Ausgaben'));
+    legend.appendChild(legendItem(TEAL, 'Gespart'));
     card.appendChild(legend);
 
     return card;
@@ -94,7 +103,14 @@
   // ---------------------------------------------------------------------------
   function buildSavingsCard(txs, currentMonth) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Sparquote'));
+    card.appendChild(App.cardHead('Sparquote', function () {
+      return App.infoContent([
+        { p: 'Sparquote = (Sparraten + Übriges) ÷ Einnahmen des aktuellen Monats, auf Basis der ' +
+             'gebuchten Werte. Geld, das in „Sparen & Anlegen“ fließt, zählt also mit – es ist ' +
+             'gespart, nicht ausgegeben.' },
+        { p: 'Als Faustregel: 10 % sind solide, ab 25 % seid ihr richtig stark unterwegs.' }
+      ]);
+    }));
 
     const summary = Analysis.monthlySummary(txs, currentMonth);
     if (summary.incomeCents <= 0) {
@@ -105,7 +121,9 @@
       return card;
     }
 
-    const pct = Math.round((summary.savedCents / summary.incomeCents) * 100);
+    // saved = transfers into 'sparen' + whatever is left over
+    const savedTotal = summary.savedCents + summary.savingsCents;
+    const pct = Math.round((savedTotal / summary.incomeCents) * 100);
 
     const big = App.el('div', '', signedPercent(pct).replace('± ', '').replace('+', ''));
     big.textContent = (pct < 0 ? '−' + Math.abs(pct) : String(pct)) + ' %';
@@ -123,7 +141,8 @@
 
     const sub = App.el(
       'p', 'row-sub',
-      'Du hast ' + App.fmtEUR(summary.savedCents) + ' von ' + App.fmtEUR(summary.incomeCents) + ' übrig.'
+      'Du hast ' + App.fmtEUR(savedTotal) + ' von ' + App.fmtEUR(summary.incomeCents) +
+      ' gespart (davon ' + App.fmtEUR(summary.savingsCents) + ' Sparraten).'
     );
     sub.style.marginTop = '10px';
     card.appendChild(sub);
@@ -231,7 +250,15 @@
   // ---------------------------------------------------------------------------
   function buildSavingsTrendCard(txs, currentMonth) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Sparverlauf · 6 Monate'));
+    card.appendChild(App.cardHead('Sparverlauf · 6 Monate', function () {
+      return App.infoContent([
+        { p: 'Für jeden der letzten 6 Monate wird gerechnet: gebuchte Einnahmen minus gebuchte ' +
+             'Konsum-Ausgaben. Die Linie summiert das auf – sie zeigt, wie euer Polster über ' +
+             'die Zeit wächst oder schrumpft.' },
+        { p: 'Sparraten (Kategorie „Sparen & Anlegen“) zählen dabei als gespart, nicht als ' +
+             'Ausgabe – was aufs Sparkonto oder in den ETF fließt, vergrößert euer Polster.' }
+      ]);
+    }));
 
     const data = Analysis.cumulativeSavings(txs, 6, currentMonth);
     const total = data.length ? data[data.length - 1].cumulativeCents : 0;
@@ -240,7 +267,7 @@
     big.style.color = total >= 0 ? 'var(--green)' : 'var(--red)';
     card.appendChild(big);
     card.appendChild(App.el('div', 'hero-sub',
-      'in den letzten 6 Monaten gespart (Einnahmen − Ausgaben)'));
+      'in den letzten 6 Monaten gespart (Sparraten + Übriges)'));
 
     const wrap = App.el('div');
     wrap.style.marginTop = '10px';
@@ -262,7 +289,22 @@
 
   function buildMetricsCard(txs, rules, currentMonth) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Kennzahlen'));
+    card.appendChild(App.cardHead('Kennzahlen', function () {
+      return App.infoContent([
+        { h: 'Ø Ausgaben / Monat' },
+        { p: 'Durchschnitt der gebuchten Konsum-Ausgaben über die letzten 6 Monate ' +
+             '(ohne Sparraten).' },
+        { h: 'Ø Sparquote' },
+        { p: 'Wie viel Prozent der Einnahmen im Schnitt gespart wurden – Sparraten plus Übriges ' +
+             '(über die letzten 6 Monate, nur Monate mit Einnahmen).' },
+        { h: 'Fixkostenquote' },
+        { p: 'Monatliche Fixkosten geteilt durch die geplanten Einnahmen des aktuellen Monats ' +
+             '(Regeln + gebuchte Einnahmen). Quartals-/Jahreskosten und Sparraten sind hier ' +
+             'nicht enthalten.' },
+        { h: 'Größte Ausgabe' },
+        { p: 'Die höchste einzelne Konsum-Buchung des aktuellen Monats (ohne Sparraten).' }
+      ]);
+    }));
 
     const m = Analysis.keyMetrics(txs, rules, currentMonth);
     const grid = App.el('div');
@@ -309,7 +351,13 @@
     const sv = Analysis.sharedVsPrivate(txs, currentMonth);
     const total = sv.sharedCents + sv.privateCents;
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Gemeinsam vs. privat'));
+    card.appendChild(App.cardHead('Gemeinsam vs. privat', function () {
+      return App.infoContent([
+        { p: 'Wie viel der gebuchten Konsum-Ausgaben dieses Monats als „Gemeinsam“ markiert ist ' +
+             '(das ist der Topf) und wie viel privat lief. Sparraten und Ausgleichszahlungen ' +
+             'zählen nicht mit.' }
+      ]);
+    }));
 
     if (total <= 0) {
       card.appendChild(emptyState('⚖️', 'Noch keine Ausgaben in diesem Monat.'));
@@ -344,7 +392,12 @@
   // ---------------------------------------------------------------------------
   function buildTopExpensesCard(txs, currentMonth) {
     const card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Top-Ausgaben diesen Monat'));
+    card.appendChild(App.cardHead('Top-Ausgaben diesen Monat', function () {
+      return App.infoContent([
+        { p: 'Die fünf größten einzelnen Konsum-Buchungen des Monats. Sparraten zählen nicht ' +
+             'dazu – die sind Vermögensaufbau, keine Ausgabe.' }
+      ]);
+    }));
 
     const top = Analysis.topExpenses(txs, currentMonth, 5);
     if (!top.length) {

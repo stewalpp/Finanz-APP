@@ -168,6 +168,11 @@ App.addMonths(monthKey, n)   // -> 'YYYY-MM'
 App.uid()                    // crypto.randomUUID() with fallback
 App.escapeHtml(s)
 App.el(tag, className, text) // tiny element factory, returns HTMLElement; className/text optional
+App.cardHead(title, makeContent?)  // '.card-head' row: '.card-title' + optional 44px (i) '.info-btn'
+                             // that opens App.showSheet({title, content: makeContent()}) lazily
+App.infoContent(blocks)      // declarative sheet content for explanation sheets; blocks:
+                             // {p:text} paragraph | {h:text} mini heading | {hr:true} separator |
+                             // {row:[label, value, tone?]} label/value line, tone 'pos'|'neg'
 App.downloadFile(filename, content, mime)  // Blob + temporary <a download> click
 App.CATEGORIES               // see below
 App.catList(type)            // -> array of {key,label,emoji,color} ; type 'expense' => all with type!=='income' and key!=='ausgleich'; type 'income' => type==='income' entries plus 'sonstiges'
@@ -256,12 +261,17 @@ Cloud implementation:
 
 ```js
 Analysis.monthlySummary(txs, monthKey)
-// -> { incomeCents, expenseCents, savedCents,            // saved = income - expense
-//      byCategory: [{category, cents, count}],           // expenses only, excl 'ausgleich', sorted cents desc
-//      byPayer: { p1:{incomeCents,expenseCents}, p2:{...} } }   // excl 'ausgleich'
+// Category 'sparen' is wealth building, NOT consumption: it is reported as savingsCents
+// and excluded from expenseCents/byCategory.
+// -> { incomeCents, expenseCents,                        // expense = consumption (excl 'sparen')
+//      savingsCents,                                     // transfers into 'sparen'
+//      savedCents,                                       // = income - expense - savings ("Übrig")
+//      byCategory: [{category, cents, count}],           // consumption only, excl 'ausgleich'+'sparen', sorted desc
+//      byPayer: { p1:{incomeCents,expenseCents,savingsCents}, p2:{...} } }   // excl 'ausgleich'
 
 Analysis.trend(txs, nMonths, endMonthKey)
-// -> [{ month:'YYYY-MM', incomeCents, expenseCents }] oldest→newest, exactly nMonths entries, excl 'ausgleich'
+// -> [{ month:'YYYY-MM', incomeCents, expenseCents, savingsCents }] oldest→newest, exactly
+//    nMonths entries, excl 'ausgleich'; expense = consumption, savings = 'sparen' txs
 
 Analysis.coupleBalance(txs)
 // shared expenses (shared===true, type 'expense'): paidShared per payer.
@@ -273,10 +283,10 @@ Analysis.coupleBalance(txs)
 //      debtorId: net>0?'p2':net<0?'p1':null }
 
 Analysis.fixedMonthlyCents(rules)
-// active MONTHLY expense rules only, rounded -> int
+// active MONTHLY expense rules only (savings rules with category 'sparen' excluded), rounded -> int
 // Quarterly and yearly rules are NOT smoothed into the monthly figure — they count as
 // individual items in their due month (availableBudget.nonMonthlyItems /
-// personalSummary.nonMonthlyItems).
+// personalSummary.nonMonthlyItems). Savings rules count under the separate savings position.
 
 Analysis.upcomingForMonth(rules, txs, monthKey, todayISO)
 // active rules due in monthKey (monthly: always; quarterly: months since anchorMonth % 3 === 0;
@@ -289,15 +299,18 @@ Analysis.availableBudget(txs, rules, monthKey)
 // Forward-looking disposable budget ("frei verfügbar") for a month.
 // plannedIncome = active monthly income rules + quarterly/yearly income rules due this month
 //                 (full amount) + non-rule income txs of the month
-// fixed         = active monthly expense rules (= fixedMonthlyCents)
-// nonMonthlyDue = quarterly + yearly expense rules due this month at full amount; each also
-//                 listed in nonMonthlyItems so the UI shows them as individual line items
-//                 (never smoothed over the other months)
-// variableSpent = expense txs of the month NOT linked to a rule (excl 'ausgleich'); txs matched
-//                 to a rule (recurringId OR upcomingForMonth fuzzy match) are excluded so a fixed
-//                 cost is never double-counted.
-// available     = plannedIncome − fixed − nonMonthlyDue − variableSpent
-// -> { total: {plannedIncomeCents, fixedCents, nonMonthlyDueCents, variableSpentCents, availableCents},
+// fixed         = active monthly expense rules, savings excluded (= fixedMonthlyCents)
+// nonMonthlyDue = quarterly + yearly NON-savings expense rules due this month at full amount;
+//                 each also listed in nonMonthlyItems so the UI shows them as individual line
+//                 items (never smoothed over the other months)
+// savings       = 'sparen' rules (monthly equiv + those due this month) + unmatched non-rule
+//                 'sparen' bookings of the month
+// variableSpent = NON-savings expense txs of the month NOT linked to a rule (excl 'ausgleich');
+//                 txs matched to a rule (recurringId OR upcomingForMonth fuzzy match) are
+//                 excluded so a fixed cost is never double-counted.
+// available     = plannedIncome − fixed − nonMonthlyDue − savings − variableSpent
+// -> { total: {plannedIncomeCents, fixedCents, nonMonthlyDueCents, savingsCents,
+//              variableSpentCents, availableCents},
 //      byPerson: { p1:{...same...}, p2:{...same...} },    // shared rules/txs split 50/50, else to payer
 //      nonMonthlyItems: [{id, name, amountCents, category, interval, payerId, shared}] }
 
@@ -308,15 +321,19 @@ Analysis.personalSummary(txs, rules, personId, monthKey)
 // (at the person's share) in their due month only.
 // incomeCents  = monthly income rules (own full, shared ½) + quarterly/yearly income rules due
 //                this month + one-off income txs (own full, shared ½)
-// fixedCents   = monthly expense rules (own non-private full, shared ½)
-// nonMonthlyDueCents = quarterly/yearly expense rules due this month (own full incl.
+// fixedCents   = monthly NON-savings expense rules (own non-private full, shared ½)
+// nonMonthlyDueCents = quarterly/yearly NON-savings expense rules due this month (own full incl.
 //                  privateExpense, shared ½); individually listed in
 //                  nonMonthlyItems [{id, name, shareCents, interval, shared}]
+// savingsCents = 'sparen' rules (monthly equiv or due this month, own full/shared ½, regardless
+//                of privateExpense) + unmatched one-off 'sparen' txs (own full, shared ½)
 // privateExpenseCents = own monthly privateExpense rules + own non-shared one-off expense txs
-// sharedVariableCents = ½ of shared one-off (non-rule) expense txs of the month
+//                (savings excluded in both)
+// sharedVariableCents = ½ of shared one-off (non-rule) NON-savings expense txs of the month
 // One-off txs already covered by a counted rule are skipped (no double count); 'ausgleich' excluded.
-// -> { incomeCents, fixedCents, nonMonthlyDueCents, nonMonthlyItems, privateExpenseCents,
-//      sharedVariableCents, leftoverCents }   // leftover = income − fixed − nonMonthlyDue − private − sharedVariable
+// -> { incomeCents, fixedCents, nonMonthlyDueCents, nonMonthlyItems, savingsCents,
+//      privateExpenseCents, sharedVariableCents, leftoverCents }
+//    // leftover = income − fixed − nonMonthlyDue − savings − private − sharedVariable
 
 Analysis.detectRecurring(txs, rules, dismissedKeys)
 // candidates: expense txs without recurringId. Group by normalized note (lowercase, trim, collapse
@@ -373,8 +390,16 @@ current Store data (clear container first). Module-level state (e.g. selected mo
 re-renders. Get data only via `Store.*`, compute via `Analysis.*`.
 
 **dashboard.js** — state: selected monthKey (default current). Content top→bottom:
-1. `.month-nav` (‹ chevron buttons › around `App.fmtMonth`, can't go beyond current month forward)
-2. `.stat-grid` 3 `.stat` cards: Einnahmen (green), Ausgaben (red), Übrig (saved; green if ≥0 else red)
+1. `.month-nav` (‹ chevron buttons › around `App.fmtMonth`; past AND future months are navigable —
+   future months show the plan-based budget incl. quarterly/yearly items due then)
+2. `.stat-grid` (2×2) 4 `.stat` cards: Einnahmen (green), Ausgaben (red, consumption without
+   savings), Gespart (teal, 'sparen' bookings), Übrig (green if ≥0 else red).
+   Each tile is tappable (role=button, small `.stat-hint` (i) glyph) and opens an explanation sheet:
+   Einnahmen → income bookings of the month + total; Ausgaben → per-category breakdown + total;
+   Gespart → savings bookings + total; Übrig → income − expenses − savings formula + how it
+   differs from "frei verfügbar".
+   Calculation cards across the app carry an (i) `.info-btn` via `App.cardHead` that opens an
+   explanation sheet (live numbers + where the related Abrechnung lives).
 3. Couple balance card: if owesCents>0 '«Name» schuldet «Name» X' + `.btn-secondary` 'Ausgleichen' → confirm → adds ausgleich transaction (payer=debtor, amount=owesCents, shared=false, note='Ausgleich', date today); else 'Ihr seid quitt ✓'
 4. Card 'Anstehende Fixkosten' (only if rules exist): up to 5 `Analysis.upcomingForMonth` rows — name, due date, amount, status badge (Bezahlt ✓ green / Fällig orange / Überfällig red) and for unpaid a small 'Buchen' button → creates transaction from rule (recurringId set, date = dueDate) + toast. Footer link-row 'Alle Fixkosten →' switches tab.
 5. Card 'Gemeinsame Ausgaben nach Kategorie': `Charts.donut` over shared (shared===true) expense txs of the month (centerTitle = their total) + legend rows (`.legend-row`: color dot, label, amount, percent). Empty → `.empty-state`.

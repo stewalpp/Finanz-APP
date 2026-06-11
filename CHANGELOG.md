@@ -4,6 +4,51 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (fünfter Wurf)
+
+- **Sparen ist jetzt app-weit vom Konsum getrennt.** Alles in Kategorie „Sparen & Anlegen"
+  zählt als Vermögensaufbau, nicht als Ausgabe: eigene Kachel **„Gespart"** auf der Übersicht
+  (2×2-Raster), eigene Zeile „Sparraten" in „Zusammen frei verfügbar", eigene Zeile „Gespart"
+  und Sektion „Sparen & Anlegen" im Tab „Persönlich". Ausgaben-Kachel, Kategorie-Diagramme,
+  Top-Ausgaben, Gemeinsam vs. privat und Kategorien-Vergleich zeigen nur noch Konsum.
+  **Sparquote** = (Sparraten + Übriges) ÷ Einnahmen; **Sparverlauf** zählt Sparraten als
+  gespart; Trend-Chart mit dritter Serie „Gespart" (türkis). Am „Frei verfügbar"-Ergebnis
+  ändert sich nichts — die Posten sind nur sauber aufgeteilt. (`analysis.js`, alle Views)
+- **Fixkostenquote & Fixkosten-Tipp rechnen gegen geplante Einnahmen** (Regeln + gebuchte
+  Einnahmen) statt nur gegen bereits gebuchte — Anfang des Monats war die Quote sonst stark
+  überzeichnet. (`analysis.js`)
+- **Topf-Erklärung: „Hälfte der Differenz" berücksichtigt gemeinsame Einnahmen** (gleiche
+  Formel wie die Paar-Bilanz). (`transactions.js`)
+- **Audit-Fixes (Genauigkeit):** (1) Pro-Person-Diagramm teilt ungerade Cent-Beträge
+  deterministisch (p1 abrunden, p2 aufrunden) — beide Diagramme zusammen ergeben exakt das
+  Gemeinsam-Diagramm. (2) Ausgleichszahlungen sind nicht mehr editierbar (der Editor kennt
+  die Kategorie „Ausgleich" nicht und hätte sie beim Typwechsel zerstört) — löschen + neu
+  ausgleichen stattdessen. (3) Regel-Editor zeigt bei „vierteljährlich" den konkreten
+  3-Monats-Rhythmus an. (4) Monats-Ledger weist Sparraten separat aus (große Zahl = nur
+  Ausgaben). (`dashboard.js`, `transactions.js`, `recurring.js`)
+- **Elterngeld & Kindergeld als monatliche Einnahme-Regeln** (Backup-JSON) — damit zeigen
+  zukünftige Monate realistische geplante Einnahmen; vorhandene Buchungen werden automatisch
+  zugeordnet.
+
+## 2026-06-11 (vierter Wurf)
+
+- **Erklär-Overlays in der ganzen App.** Alle Rechen-Karten haben jetzt einen (i)-Button, der
+  ein Sheet mit der konkreten Rechnung (mit euren Live-Zahlen) öffnet und erklärt, wo die
+  zugehörige Abrechnung zu finden ist: „Zusammen frei verfügbar", „Gemeinsamer Topf"
+  (Dashboard & Buchungen, inkl. kompletter Abrechnung über alle Monate), beide
+  Kategorie-Diagramme, „Anstehende Fixkosten", Persönlich-Überblick, Monats-Ledger sowie
+  Sparverlauf, Trend, Kennzahlen, Sparquote und Gemeinsam vs. privat in der Analyse.
+  Neue Helfer `App.cardHead(title, makeContent)` und `App.infoContent(blocks)` in `core.js`.
+- **Stat-Kacheln antippbar.** Einnahmen / Ausgaben / Übrig auf der Übersicht öffnen beim
+  Antippen ein Overlay: Einnahmen-Liste des Monats, Ausgaben-Aufschlüsselung nach Kategorie
+  bzw. die Übrig-Rechnung samt Erklärung des Unterschieds zu „frei verfügbar".
+  (`core.js`, `style.css`, `dashboard.js`, `personal.js`, `transactions.js`, `insights.js`)
+- **Zukünftige Monate ansteuerbar.** Übersicht und Persönlich erlauben jetzt auch das
+  Vorblättern in kommende Monate (wie Buchungen) — dort sieht man das geplante Budget
+  inklusive der dann fälligen Quartals- und Jahreskosten (z. B. KFZ-Steuer im Juli).
+  (`dashboard.js`, `personal.js`)
+  SW-Cache `v19`.
+
 ## 2026-06-11 (dritter Wurf)
 
 - **Vierteljährliche Kosten (z. B. GEZ) wie jährliche behandelt.** Keine Umlage mehr auf die

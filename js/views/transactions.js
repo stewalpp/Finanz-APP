@@ -213,21 +213,33 @@
 
   // Live total card — always visible, recomputed on every render/search/data change.
   function buildTotalCard(entries) {
-    var expenseSum = entries.reduce(function (sum, entry) {
+    var expenseSum = 0;   // consumption + open fixed costs (savings excluded)
+    var savingsSum = 0;   // transfers into 'sparen' (booked or still open)
+    var incomeSum = 0;
+    entries.forEach(function (entry) {
       var item = entry.kind === 'rule' ? entry.item.rule : entry.item;
-      return item.type === 'expense' ? sum + item.amountCents : sum;
-    }, 0);
-    var incomeSum = entries.reduce(function (sum, entry) {
-      var item = entry.kind === 'rule' ? entry.item.rule : entry.item;
-      return item.type === 'income' ? sum + item.amountCents : sum;
-    }, 0);
+      if (item.type === 'income') incomeSum += item.amountCents;
+      else if (item.type === 'expense' && item.category === 'sparen') savingsSum += item.amountCents;
+      else if (item.type === 'expense') expenseSum += item.amountCents;
+    });
     var card = App.el('div', 'card hero-card');
-    card.appendChild(App.el('div', 'card-title', 'Gemeinsame Ausgaben · ' + App.fmtMonth(state.month)));
-    card.firstChild.textContent = 'Ausgaben & Fixkosten \u00b7 ' + App.fmtMonth(state.month);
+    card.appendChild(App.cardHead('Ausgaben & Fixkosten · ' + App.fmtMonth(state.month), function () {
+      return App.infoContent([
+        { p: 'Der Monats-Ledger: alle Buchungen dieses Monats – private und gemeinsame – plus die ' +
+             'noch nicht gebuchten Fixkosten (orange markiert, mit „Buchen“-Knopf).' },
+        { row: ['Ausgaben (inkl. offener Fixkosten)', '−' + App.fmtEUR(expenseSum), 'neg'] },
+        { row: ['Sparraten', '−' + App.fmtEUR(savingsSum), 'saving'] },
+        { row: ['Einnahmen', '+' + App.fmtEUR(incomeSum), 'pos'] },
+        { p: 'Die große Zahl zeigt die Ausgaben; Sparraten sind Vermögensaufbau und stehen ' +
+             'separat darunter. Ausgleichszahlungen zählen hier nicht mit – ihre Historie ' +
+             'findest du im Gemeinsamen Topf.' }
+      ]);
+    }));
     var big = App.el('div', 'hero-amount', App.fmtEUR(expenseSum));
     card.appendChild(big);
     var n = entries.length;
     var subText = (n === 1 ? '1 Eintrag' : n + ' Eintr\u00e4ge');
+    if (savingsSum > 0) subText += ' · Sparraten ' + App.fmtEUR(savingsSum);
     if (incomeSum > 0) subText += ' · Einnahmen ' + App.fmtEUR(incomeSum);
     var sub = App.el('div', 'hero-sub', subText);
     card.appendChild(sub);
@@ -265,7 +277,48 @@
   // running balance (all-time, after settlements) + settle button + quick add.
   function buildPotCard(entries) {
     var card = App.el('div', 'card hero-card');
-    card.appendChild(App.el('div', 'card-title', 'Gemeinsamer Topf · ' + App.fmtMonth(state.month)));
+    card.appendChild(App.cardHead('Gemeinsamer Topf · ' + App.fmtMonth(state.month), function () {
+      var allTxs = Store.getTransactions();
+      var bal = Analysis.coupleBalance(allTxs);
+      var name1 = App.memberName('p1') || 'p1';
+      var name2 = App.memberName('p2') || 'p2';
+      var settledSum = 0;
+      allTxs.forEach(function (t) {
+        if (t.category === 'ausgleich') settledSum += t.amountCents;
+      });
+
+      var blocks = [
+        { p: 'So funktioniert der Topf: Markiert eine Buchung als „Gemeinsam“ – egal, wer sie ' +
+             'anlegt. Sie landet hier mit Name und Farbe der Person, die bezahlt hat. Unten in der ' +
+             'Liste steht die komplette Historie, inklusive Ausgleichszahlungen.' },
+        { h: 'Abrechnung über alle Monate' },
+        { row: ['Eingezahlt ' + name1, App.fmtEUR(bal.paidSharedCents.p1)] },
+        { row: ['Eingezahlt ' + name2, App.fmtEUR(bal.paidSharedCents.p2)] },
+        // same formula as coupleBalance: shared income held by one partner
+        // counts against what they fronted
+        { row: ['Hälfte der Differenz', App.fmtEUR(Math.round(Math.abs(
+          (bal.paidSharedCents.p1 - bal.paidSharedCents.p2) -
+          (bal.receivedSharedCents.p1 - bal.receivedSharedCents.p2)) / 2))] }
+      ];
+      if (bal.receivedSharedCents.p1 > 0 || bal.receivedSharedCents.p2 > 0) {
+        blocks.push({ row: ['Gemeinsame Einnahmen ' + name1, App.fmtEUR(bal.receivedSharedCents.p1)] });
+        blocks.push({ row: ['Gemeinsame Einnahmen ' + name2, App.fmtEUR(bal.receivedSharedCents.p2)] });
+      }
+      if (settledSum > 0) {
+        blocks.push({ row: ['Ausgleichszahlungen (verrechnet)', App.fmtEUR(settledSum)] });
+      }
+      blocks.push(
+        { hr: true },
+        bal.debtorId
+          ? { row: [(App.memberName(bal.debtorId) || bal.debtorId) + ' schuldet ' +
+              (App.memberName(bal.debtorId === 'p1' ? 'p2' : 'p1') || ''), App.fmtEUR(bal.owesCents), 'neg'] }
+          : { row: ['Offen', App.fmtEUR(0)] },
+        { p: 'Es zahlt immer, wer weniger eingezahlt hat: die Hälfte der Differenz, abzüglich ' +
+             'bereits gebuchter Ausgleichszahlungen. „Ausgleichen“ bucht die Rückzahlung – danach ' +
+             'seid ihr quitt.' }
+      );
+      return App.infoContent(blocks);
+    }));
 
     var expenseSum = 0;
     var paid = { p1: 0, p2: 0 };
@@ -626,6 +679,13 @@
   // defaults (optional): { shared, payerId } to preset a NEW booking
   // (used by the pot's "+ Gemeinsame Ausgabe" button)
   function openEditor(tx, defaults) {
+    // Settlements must not be edited: the editor has no 'ausgleich' category, so a
+    // type switch would silently convert the transfer into a regular booking and
+    // corrupt the couple balance. Delete + re-settle instead.
+    if (tx && tx.category === 'ausgleich') {
+      App.toast('Ausgleichszahlung: zum Korrigieren löschen (nach links wischen) und neu ausgleichen.');
+      return;
+    }
     var isEdit = !!tx;
     defaults = defaults || {};
     var members = getMembers();

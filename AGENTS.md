@@ -90,7 +90,9 @@ nie auf Top-Level.
 
 **`window.App`** (core.js + app.js):
 `fmtEUR`, `parseEUR`, `fmtDate`, `fmtDateShort`, `fmtMonth`, `todayISO`, `monthKey`, `addMonths`,
-`uid`, `escapeHtml`, `el(tag,cls,text)`, `downloadFile`, `getTheme`, `setTheme`, `CATEGORIES`,
+`uid`, `escapeHtml`, `el(tag,cls,text)`, `cardHead(title, makeContent?)` (Karten-Kopf mit optionalem
+(i)-Erklär-Button → Info-Sheet), `infoContent(blocks)` (deklarativer Sheet-Inhalt: `{p}`,`{h}`,
+`{row:[label,value,tone?]}`,`{hr}`), `downloadFile`, `getTheme`, `setTheme`, `CATEGORIES`,
 `catList(type)`, `cat(key)`, `memberName(id)`, `showSheet({title,content,onClose})`, `closeSheet`,
 `confirm({title,message,confirmText,destructive}) → Promise<bool>`, `toast(msg)`,
 `switchTab(key)`, `currentTab`, `rerender()`.
@@ -177,6 +179,18 @@ Diagrammen und Tipps **ausgenommen** — nur `Analysis.coupleBalance` nutzt sie.
   `Views.transactions.setScope('pot')` dorthin.
 - **Dashboard-Kategorie-Diagramm zweigeteilt:** „Gemeinsame Ausgaben nach Kategorie" und
   „Ausgaben pro Person" (Umschalter; privat voll + ½ der gemeinsamen Buchungen).
+- **Erklär-Overlays überall:** Rechen-Karten haben einen (i)-Button (`App.cardHead` +
+  `App.infoContent`), der ein Bottom-Sheet mit der konkreten Rechnung (live-Zahlen) und
+  Verweis auf die zugehörige Abrechnung öffnet. Die Stat-Kacheln der Übersicht
+  (Einnahmen/Ausgaben/Gespart/Übrig, 2×2) sind antippbar und öffnen ebenfalls Erklär-Sheets
+  mit Aufschlüsselung (Buchungsliste bzw. Kategorien).
+- **Sparen ist Vermögensaufbau, kein Konsum:** Kategorie `'sparen'` wird app-weit getrennt
+  von den Ausgaben geführt (`savingsCents` in `monthlySummary`/`trend`/`availableBudget`/
+  `personalSummary`; eigene Kachel „Gespart", Budget-Zeile „Sparraten", Persönlich-Sektion
+  „Sparen & Anlegen"). Sparquote = (Sparraten + Übriges) ÷ Einnahmen; Sparverlauf zählt
+  Sparraten als gespart. Fixkostenquote rechnet gegen geplante Einnahmen.
+- **Zukünftige Monate sind in Übersicht & Persönlich navigierbar** (plan-basiertes Budget
+  zeigt die dann fälligen Posten).
 - **5 Tabs:** Übersicht · Persönlich · Buchungen · Analyse · Mehr (Übersicht + Persönlich sind das
   Herzstück, zuerst). Der frühere Fixkosten-Tab wurde entfernt: Regeln verwaltet man in „Persönlich",
   Erkennung + fällige Fixkosten zeigt das Dashboard, ICS-Export liegt in „Mehr".

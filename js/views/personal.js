@@ -70,16 +70,11 @@
     next.type = 'button';
     next.setAttribute('aria-label', 'Nächster Monat');
     next.appendChild(chevron('right'));
-    var atCurrent = selectedMonth >= currentMonthKey();
-    if (atCurrent) {
-      next.disabled = true;
-      next.style.opacity = '0.3';
-    } else {
-      next.addEventListener('click', function () {
-        selectedMonth = App.addMonths(selectedMonth, 1);
-        App.rerender();
-      });
-    }
+    // future months are allowed: shows upcoming due items per person
+    next.addEventListener('click', function () {
+      selectedMonth = App.addMonths(selectedMonth, 1);
+      App.rerender();
+    });
 
     nav.appendChild(prev);
     nav.appendChild(title);
@@ -103,6 +98,7 @@
     v.style.fontVariantNumeric = 'tabular-nums';
     if (tone === 'pos') v.style.color = 'var(--green)';
     else if (tone === 'neg') v.style.color = 'var(--red)';
+    else if (tone === 'saving') v.style.color = 'var(--teal)';
     row.appendChild(l);
     row.appendChild(v);
     return row;
@@ -110,7 +106,35 @@
 
   function buildSummaryCard(sum) {
     var card = App.el('div', 'card');
-    card.appendChild(App.el('div', 'card-title', 'Überblick'));
+    card.appendChild(App.cardHead('Überblick', function () {
+      var blocks = [
+        { row: ['Gehalt & Einnahmen', '+' + App.fmtEUR(sum.incomeCents), 'pos'] },
+        { row: ['Fixkosten (mtl.)', '−' + App.fmtEUR(sum.fixedCents), 'neg'] }
+      ];
+      if (sum.nonMonthlyDueCents > 0) {
+        blocks.push({ row: ['Diesen Monat zusätzlich fällig', '−' + App.fmtEUR(sum.nonMonthlyDueCents), 'neg'] });
+      }
+      if (sum.savingsCents > 0) {
+        blocks.push({ row: ['Gespart', '−' + App.fmtEUR(sum.savingsCents), 'saving'] });
+      }
+      blocks.push({ row: ['Private Ausgaben', '−' + App.fmtEUR(sum.privateExpenseCents), 'neg'] });
+      if (sum.sharedVariableCents > 0) {
+        blocks.push({ row: ['Gemeinsame Ausgaben (½)', '−' + App.fmtEUR(sum.sharedVariableCents), 'neg'] });
+      }
+      blocks.push(
+        { hr: true },
+        { row: ['Bleibt übrig', App.fmtEUR(sum.leftoverCents), sum.leftoverCents >= 0 ? 'pos' : 'neg'] },
+        { h: 'So wird gerechnet' },
+        { p: 'Einnahmen: eigene voll, gemeinsame zur Hälfte. Fixkosten: eigene monatliche Regeln ' +
+             'voll plus die Hälfte aller gemeinsamen – egal, wer sie bezahlt. Quartals- und ' +
+             'Jahreskosten zählen nur in ihrem Fälligkeitsmonat. Gespart: Sparraten und ' +
+             'Spar-Buchungen (Vermögensaufbau, kein Konsum). Private Ausgaben: eigene Buchungen ' +
+             'und private Regeln dieses Monats.' },
+        { p: 'Wer wem wie viel schuldet, ist davon unabhängig – das regelt der Gemeinsame Topf ' +
+             'im Tab „Buchungen“.' }
+      );
+      return App.infoContent(blocks);
+    }));
 
     var hero = App.el('div');
     hero.style.textAlign = 'center';
@@ -141,6 +165,9 @@
         row.style.padding = '0 0 4px 12px';
         card.appendChild(row);
       });
+    }
+    if (sum.savingsCents > 0) {
+      card.appendChild(summaryLine('Gespart', sum.savingsCents, '−', 'saving'));
     }
     card.appendChild(summaryLine('Private Ausgaben', sum.privateExpenseCents, '−', 'neg'));
     if (sum.sharedVariableCents > 0) {
@@ -280,11 +307,12 @@
       addRecurringBtn('+ Wiederkehrende Einnahme', 'income')));
 
     // Fixkosten — this person's own rules plus ALL shared rules (also the partner's,
-    // since shared rules count half for each partner), except rules explicitly
-    // created as recurring private expenses below.
+    // since shared rules count half for each partner), except recurring private
+    // expenses (below) and savings rules (own section).
     var ruleRows = rules
       .filter(function (r) {
         return r.active && r.type === 'expense' && r.privateExpense !== true &&
+          r.category !== 'sparen' &&
           (r.payerId === selectedPerson || r.shared === true);
       })
       .map(ruleRow);
@@ -292,15 +320,46 @@
       'Noch keine Fixkosten auf ' + personName(selectedPerson) + '. Wiederkehrende Ausgaben hier anlegen.',
       addRecurringBtn('+ Fixkosten anlegen', 'expense')));
 
-    // Private Ausgaben — one-off expenses this month plus recurring private expenses.
+    // Sparen & Anlegen — wealth building, never counted as consumption: savings
+    // rules (own or shared) plus one-off savings bookings this month.
+    var savingRuleRows = rules
+      .filter(function (r) {
+        return r.active && r.type === 'expense' && r.category === 'sparen' &&
+          (r.payerId === selectedPerson || r.shared === true);
+      })
+      .map(ruleRow);
+    var savingTxs = txs.filter(function (t) {
+      return t.type === 'expense' && t.category === 'sparen' && !t.recurringId &&
+        (t.payerId === selectedPerson || t.shared === true) &&
+        App.monthKey(t.date) === selectedMonth;
+    });
+    var savingRows = savingRuleRows.concat(savingTxs.map(txRow));
+    var savingCard = sectionCard('Sparen & Anlegen', savingRows,
+      'Noch keine Sparraten. Lege z. B. deinen ETF-Sparplan als wiederkehrende Sparrate an.',
+      addRecurringBtn('+ Sparrate anlegen', 'expense', {
+        category: 'sparen',
+        title: 'Neue Sparrate'
+      }));
+    if (savingRows.length) {
+      var savingFooter = App.el('p', 'row-sub',
+        'Zählt als Vermögensaufbau · Σ ' + App.fmtEUR(sum.savingsCents) + ' diesen Monat');
+      savingFooter.style.textAlign = 'center';
+      savingFooter.style.padding = '10px 0 2px';
+      savingCard.appendChild(savingFooter);
+    }
+    view.appendChild(savingCard);
+
+    // Private Ausgaben — one-off expenses this month plus recurring private
+    // expenses (savings excluded, they live above).
     var privRuleRows = rules
       .filter(function (r) {
         return r.active && r.type === 'expense' && r.payerId === selectedPerson &&
-          r.privateExpense === true;
+          r.privateExpense === true && r.category !== 'sparen';
       })
       .map(ruleRow);
     var privTxs = txs.filter(function (t) {
       return t.payerId === selectedPerson && t.type === 'expense' && t.shared !== true &&
+        t.category !== 'sparen' &&
         !t.recurringId && t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
     });
     var privRows = privRuleRows.concat(privTxs.map(txRow));
