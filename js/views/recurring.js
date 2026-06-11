@@ -83,6 +83,34 @@
     card.appendChild(value);
 
     card.appendChild(App.el('div', 'row-sub', '≈ ' + App.fmtEUR(monthly * 12) + ' pro Jahr'));
+
+    // disposable budget this month — same figure as on the dashboard
+    var monthKey = App.monthKey(App.todayISO());
+    var budget = Analysis.availableBudget(Store.getTransactions(), rules, monthKey);
+    var avail = budget.total.availableCents;
+
+    var sep = App.el('div');
+    sep.style.height = '0.5px';
+    sep.style.background = 'var(--sep)';
+    sep.style.margin = '12px 0';
+    card.appendChild(sep);
+
+    var row = App.el('div');
+    row.style.display = 'flex';
+    row.style.justifyContent = 'space-between';
+    row.style.alignItems = 'baseline';
+    var lbl = App.el('span', '', 'Frei verfügbar diesen Monat');
+    lbl.style.color = 'var(--text-2)';
+    lbl.style.fontSize = '15px';
+    var val = App.el('span', '', App.fmtEUR(avail));
+    val.style.fontWeight = '700';
+    val.style.fontSize = '17px';
+    val.style.fontVariantNumeric = 'tabular-nums';
+    val.style.color = avail >= 0 ? 'var(--green)' : 'var(--red)';
+    row.appendChild(lbl);
+    row.appendChild(val);
+    card.appendChild(row);
+
     return card;
   }
 

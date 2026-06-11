@@ -234,6 +234,83 @@
     return out;
   }
 
+  // "Frei verfügbar" for a month: a forward-looking, plan-based budget.
+  //   plannedIncome = monthly-equiv of active income rules + non-rule income bookings this month
+  //   fixed         = monthly-equiv of active expense rules (smoothed; = fixedMonthlyCents)
+  //   variableSpent = expense bookings this month that are NOT part of a fixed-cost rule
+  //   available     = plannedIncome − fixed − variableSpent
+  // Bookings that belong to a rule (explicit recurringId link OR fuzzy match, same logic as
+  // upcomingForMonth) are excluded from the booking loop so a fixed cost is never counted twice.
+  // Per person: shared rules/bookings are split 50/50, everything else goes to its payer.
+  function availableBudget(txs, rules, monthKey) {
+    var ruleList = rules || [];
+    var txList = txs || [];
+
+    function monthlyEquiv(r) {
+      var amt = cents(r.amountCents);
+      if (r.interval === 'monthly') return amt;
+      if (r.interval === 'quarterly') return amt / 3;
+      if (r.interval === 'yearly') return amt / 12;
+      return 0;
+    }
+
+    var total = { plannedIncome: 0, fixed: 0, variableSpent: 0 };
+    var per = {
+      p1: { plannedIncome: 0, fixed: 0, variableSpent: 0 },
+      p2: { plannedIncome: 0, fixed: 0, variableSpent: 0 }
+    };
+
+    function add(field, amt, payerId, shared) {
+      total[field] += amt;
+      if (shared === true) {
+        per.p1[field] += amt / 2;
+        per.p2[field] += amt / 2;
+      } else if (per[payerId]) {
+        per[payerId][field] += amt;
+      }
+    }
+
+    for (var i = 0; i < ruleList.length; i++) {
+      var r = ruleList[i];
+      if (!r || !r.active) continue;
+      var eq = monthlyEquiv(r);
+      if (r.type === 'income') add('plannedIncome', eq, r.payerId, r.shared === true);
+      else if (r.type === 'expense') add('fixed', eq, r.payerId, r.shared === true);
+    }
+
+    // tx ids already represented by a rule (same matching as the dashboard's "Bezahlt")
+    var matched = new Set();
+    upcomingForMonth(ruleList, txList, monthKey, '0000-00-00').forEach(function (item) {
+      if (item.matchedTxId) matched.add(item.matchedTxId);
+    });
+
+    for (var j = 0; j < txList.length; j++) {
+      var tx = txList[j];
+      if (!tx || !inMonth(tx, monthKey) || tx.category === 'ausgleich') continue;
+      if (tx.recurringId || matched.has(tx.id)) continue;
+      var amt = cents(tx.amountCents);
+      if (tx.type === 'income') add('plannedIncome', amt, tx.payerId, tx.shared === true);
+      else if (tx.type === 'expense') add('variableSpent', amt, tx.payerId, tx.shared === true);
+    }
+
+    function finalize(o) {
+      var pi = Math.round(o.plannedIncome);
+      var fx = Math.round(o.fixed);
+      var vs = Math.round(o.variableSpent);
+      return {
+        plannedIncomeCents: pi,
+        fixedCents: fx,
+        variableSpentCents: vs,
+        availableCents: pi - fx - vs
+      };
+    }
+
+    return {
+      total: finalize(total),
+      byPerson: { p1: finalize(per.p1), p2: finalize(per.p2) }
+    };
+  }
+
   function detectRecurring(txs, rules, dismissedKeys) {
     var dismissed = new Set(Array.isArray(dismissedKeys) ? dismissedKeys : []);
     var groups = new Map();
@@ -606,6 +683,7 @@
     coupleBalance: coupleBalance,
     fixedMonthlyCents: fixedMonthlyCents,
     upcomingForMonth: upcomingForMonth,
+    availableBudget: availableBudget,
     detectRecurring: detectRecurring,
     tips: tips,
     icsForRules: icsForRules

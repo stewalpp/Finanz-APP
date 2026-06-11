@@ -108,6 +108,109 @@
   }
 
   // ---------------------------------------------------------------------------
+  // 2b. "Frei verfügbar diesen Monat" — disposable budget
+  // ---------------------------------------------------------------------------
+  function memberColor(id) {
+    const members = (Store.getSettings().members) || [];
+    for (let i = 0; i < members.length; i++) {
+      if (members[i].id === id) return members[i].color || 'var(--gray)';
+    }
+    return 'var(--gray)';
+  }
+
+  function budgetLine(label, cents, sign, tone, small) {
+    const row = App.el('div');
+    row.style.display = 'flex';
+    row.style.justifyContent = 'space-between';
+    row.style.alignItems = 'baseline';
+    row.style.padding = small ? '4px 0' : '6px 0';
+
+    const l = App.el('span', '', label);
+    l.style.color = 'var(--text-2)';
+    l.style.fontSize = small ? '14px' : '15px';
+    if (small) l.style.display = 'flex', l.style.alignItems = 'center', l.style.gap = '8px';
+
+    const v = App.el('span', '', (sign || '') + App.fmtEUR(cents));
+    v.style.fontSize = small ? '14px' : '15px';
+    v.style.fontWeight = '600';
+    v.style.fontVariantNumeric = 'tabular-nums';
+    if (tone === 'pos') v.style.color = 'var(--green)';
+    else if (tone === 'neg') v.style.color = 'var(--red)';
+
+    row.appendChild(l);
+    row.appendChild(v);
+    return row;
+  }
+
+  function buildBudgetCard(txs, rules) {
+    const budget = Analysis.availableBudget(txs, rules, selectedMonth);
+    const t = budget.total;
+
+    const card = App.el('div', 'card');
+    card.appendChild(App.el('div', 'card-title', 'Frei verfügbar diesen Monat'));
+
+    // hero number
+    const hero = App.el('div');
+    hero.style.textAlign = 'center';
+    hero.style.padding = '4px 0 12px';
+    const big = App.el('div', '', App.fmtEUR(t.availableCents));
+    big.style.fontSize = '34px';
+    big.style.fontWeight = '700';
+    big.style.fontVariantNumeric = 'tabular-nums';
+    big.style.color = t.availableCents >= 0 ? 'var(--green)' : 'var(--red)';
+    hero.appendChild(big);
+    const heroSub = App.el('div', '',
+      t.availableCents >= 0
+        ? 'bleiben euch nach Fixkosten und Ausgaben'
+        : 'über dem geplanten Budget');
+    heroSub.style.color = 'var(--text-2)';
+    heroSub.style.fontSize = '13px';
+    heroSub.style.marginTop = '2px';
+    hero.appendChild(heroSub);
+    card.appendChild(hero);
+
+    // breakdown
+    card.appendChild(budgetLine('Geplante Einnahmen', t.plannedIncomeCents, '+', 'pos', false));
+    card.appendChild(budgetLine('Fixkosten', t.fixedCents, '−', 'neg', false));
+    card.appendChild(budgetLine('Bereits ausgegeben', t.variableSpentCents, '−', 'neg', false));
+
+    // per-person split
+    const sep = App.el('div');
+    sep.style.height = '0.5px';
+    sep.style.background = 'var(--sep)';
+    sep.style.margin = '10px 0';
+    card.appendChild(sep);
+
+    const perTitle = App.el('div', '', 'Pro Person frei verfügbar');
+    perTitle.style.color = 'var(--text-3)';
+    perTitle.style.fontSize = '12px';
+    perTitle.style.textTransform = 'uppercase';
+    perTitle.style.letterSpacing = '0.04em';
+    perTitle.style.marginBottom = '2px';
+    card.appendChild(perTitle);
+
+    ['p1', 'p2'].forEach(function (pid) {
+      const p = budget.byPerson[pid];
+      const dot = App.el('span', 'dot');
+      dot.style.background = memberColor(pid);
+      const label = App.el('span', '');
+      label.appendChild(dot);
+      label.appendChild(document.createTextNode(App.memberName(pid) || (pid === 'p1' ? 'Partner 1' : 'Partner 2')));
+      const row = budgetLine('', p.availableCents, '', p.availableCents >= 0 ? 'pos' : 'neg', true);
+      // replace the (empty) label node with the dot + name label
+      row.replaceChild(label, row.firstChild);
+      label.style.display = 'flex';
+      label.style.alignItems = 'center';
+      label.style.gap = '8px';
+      label.style.color = 'var(--text)';
+      label.style.fontSize = '14px';
+      card.appendChild(row);
+    });
+
+    return card;
+  }
+
+  // ---------------------------------------------------------------------------
   // 3. Couple balance card ("wer schuldet wem")
   // ---------------------------------------------------------------------------
   function settleUp(balance) {
@@ -426,6 +529,7 @@
 
     view.appendChild(buildMonthNav());
     view.appendChild(buildStatGrid(summary));
+    view.appendChild(buildBudgetCard(txs, rules));
     view.appendChild(buildBalanceCard(txs));
     if (rules.length) view.appendChild(buildUpcomingCard(rules, txs));
     view.appendChild(buildCategoryCard(summary));

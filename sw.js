@@ -1,7 +1,7 @@
 /* Service worker for "Unsere Finanzen" — precache app shell, stale-while-revalidate. */
 'use strict';
 
-const CACHE = 'unsere-finanzen-v3';
+const CACHE = 'unsere-finanzen-v4';
 
 const PRECACHE = [
   './',

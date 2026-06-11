@@ -278,6 +278,17 @@ Analysis.upcomingForMonth(rules, txs, monthKey, todayISO)
 // status: 'paid' if matched; 'overdue' if dueDateISO < todayISO; else 'due'
 // -> [{rule, dueDateISO, status, matchedTxId}] sorted by dueDateISO
 
+Analysis.availableBudget(txs, rules, monthKey)
+// Forward-looking disposable budget ("frei verfügbar") for a month.
+// plannedIncome = monthly-equiv of active income rules + non-rule income txs of the month
+// fixed         = monthly-equiv of active expense rules (= fixedMonthlyCents)
+// variableSpent = expense txs of the month NOT linked to a rule (excl 'ausgleich'); txs matched
+//                 to a rule (recurringId OR upcomingForMonth fuzzy match) are excluded so a fixed
+//                 cost is never double-counted.
+// available     = plannedIncome − fixed − variableSpent
+// -> { total: {plannedIncomeCents, fixedCents, variableSpentCents, availableCents},
+//      byPerson: { p1:{...same...}, p2:{...same...} } }   // shared rules/txs split 50/50, else to payer
+
 Analysis.detectRecurring(txs, rules, dismissedKeys)
 // candidates: expense txs without recurringId. Group by normalized note (lowercase, trim, collapse
 // spaces; skip txs with empty note) where amounts within ±10% of the group median.
