@@ -62,6 +62,62 @@
   }
 }
 
+/* Manual appearance override (Einstellungen → Darstellung).
+   html.theme-light / html.theme-dark beat both :root blocks above. */
+html.theme-light {
+  color-scheme: light;
+
+  --bg:        #F2F2F7;
+  --bg-card:   #FFFFFF;
+  --bg-input:  rgba(118, 118, 128, 0.12);
+  --text:      #000000;
+  --text-2:    rgba(60, 60, 67, 0.6);
+  --text-3:    rgba(60, 60, 67, 0.3);
+  --sep:       rgba(60, 60, 67, 0.18);
+  --tint:      #007AFF;
+  --green:     #34C759;
+  --red:       #FF3B30;
+  --orange:    #FF9500;
+  --yellow:    #FFCC00;
+  --purple:    #AF52DE;
+  --pink:      #FF2D55;
+  --teal:      #30B0C7;
+  --indigo:    #5856D6;
+  --gray:      #8E8E93;
+
+  --bar-bg:        rgba(246, 246, 249, 0.82);
+  --segment-bg:    #FFFFFF;
+  --shadow-card:   0 1px 1px rgba(0, 0, 0, 0.03), 0 4px 14px rgba(0, 0, 0, 0.05);
+  --shadow-knob:   0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+}
+
+html.theme-dark {
+  color-scheme: dark;
+
+  --bg:        #000000;
+  --bg-card:   #1C1C1E;
+  --bg-input:  rgba(118, 118, 128, 0.24);
+  --text:      #FFFFFF;
+  --text-2:    rgba(235, 235, 245, 0.6);
+  --text-3:    rgba(235, 235, 245, 0.3);
+  --sep:       rgba(84, 84, 88, 0.5);
+  --tint:      #0A84FF;
+  --green:     #30D158;
+  --red:       #FF453A;
+  --orange:    #FF9F0A;
+  --yellow:    #FFD60A;
+  --purple:    #BF5AF2;
+  --pink:      #FF375F;
+  --teal:      #40C8E0;
+  --indigo:    #5E5CE6;
+  --gray:      #8E8E93;
+
+  --bar-bg:        rgba(18, 18, 20, 0.78);
+  --segment-bg:    #636366;
+  --shadow-card:   none;
+  --shadow-knob:   0 3px 8px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
 /* --------------------------------------------------------------------------
    2. Base / reset
    -------------------------------------------------------------------------- */

@@ -562,6 +562,38 @@
     view.appendChild(group);
   }
 
+  /* ---------- appearance ---------- */
+
+  function appearanceSection(view) {
+    view.appendChild(App.el('div', 'section-title', 'Darstellung'));
+    var group = App.el('div', 'list-group');
+
+    var row = App.el('div', 'list-row');
+    var seg = App.el('div', 'segmented');
+    seg.style.flex = '1';
+    var options = [
+      { key: 'system', label: 'System' },
+      { key: 'light', label: 'Hell' },
+      { key: 'dark', label: 'Dunkel' }
+    ];
+    var current = App.getTheme();
+    options.forEach(function (opt) {
+      var btn = App.el('button', 'segment' + (opt.key === current ? ' active' : ''), opt.label);
+      btn.type = 'button';
+      btn.addEventListener('click', function () {
+        App.setTheme(opt.key);
+        var siblings = seg.querySelectorAll('.segment');
+        for (var i = 0; i < siblings.length; i++) siblings[i].classList.remove('active');
+        btn.classList.add('active');
+      });
+      seg.appendChild(btn);
+    });
+    row.appendChild(seg);
+    group.appendChild(row);
+
+    view.appendChild(group);
+  }
+
   /* ---------- danger zone ---------- */
 
   function dangerSection(view) {
@@ -607,6 +639,7 @@
 
       personsSection(view);
       syncSection(view);
+      appearanceSection(view);
       dataSection(view);
       dangerSection(view);
 

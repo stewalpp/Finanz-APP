@@ -83,9 +83,9 @@
     content.appendChild(hello);
 
     var intro = App.el('p', '',
-      'Schön, dass ihr da seid! Mit „Unsere Finanzen“ behaltet ihr eure ' +
-      'Ausgaben, Einnahmen und Fixkosten gemeinsam im Blick – und seht ' +
-      'immer, wer wem etwas schuldet. Wie heißt ihr?');
+      'Schön, dass ihr da seid! Mit „Unsere Finanzen“ habt ihr eure ' +
+      'gemeinsamen Finanzen immer im Blick, erkennt eure Sparpotenziale – ' +
+      'und baut Schritt für Schritt euer gemeinsames Vermögen auf. Wie heißt ihr?');
     intro.style.color = 'var(--text-2)';
     intro.style.marginBottom = '16px';
     content.appendChild(intro);

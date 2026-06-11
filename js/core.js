@@ -168,6 +168,30 @@
     }, 0);
   };
 
+  /* ---------------- appearance (per device, not synced) ---------------- */
+
+  // 'system' | 'light' | 'dark' — stored in localStorage 'cf.theme';
+  // index.html applies the class before first paint, this keeps it in sync.
+  App.getTheme = function () {
+    try {
+      var t = localStorage.getItem('cf.theme');
+      return t === 'dark' || t === 'light' ? t : 'system';
+    } catch (e) { return 'system'; }
+  };
+
+  App.setTheme = function (theme) {
+    var html = document.documentElement;
+    html.classList.remove('theme-light', 'theme-dark');
+    try {
+      if (theme === 'light' || theme === 'dark') {
+        localStorage.setItem('cf.theme', theme);
+        html.classList.add('theme-' + theme);
+      } else {
+        localStorage.removeItem('cf.theme');
+      }
+    } catch (e) { /* storage unavailable — theme stays for this session only */ }
+  };
+
   /* ---------------- categories ---------------- */
 
   App.CATEGORIES = {
