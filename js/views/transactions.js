@@ -225,14 +225,10 @@
     var card = App.el('div', 'card hero-card');
     card.appendChild(App.cardHead('Ausgaben & Fixkosten · ' + App.fmtMonth(state.month), function () {
       return App.infoContent([
-        { p: 'Der Monats-Ledger: alle Buchungen dieses Monats – private und gemeinsame – plus die ' +
-             'noch nicht gebuchten Fixkosten (orange markiert, mit „Buchen“-Knopf).' },
         { row: ['Ausgaben (inkl. offener Fixkosten)', '−' + App.fmtEUR(expenseSum), 'neg'] },
         { row: ['Sparraten', '−' + App.fmtEUR(savingsSum), 'saving'] },
         { row: ['Einnahmen', '+' + App.fmtEUR(incomeSum), 'pos'] },
-        { p: 'Die große Zahl zeigt die Ausgaben; Sparraten sind Vermögensaufbau und stehen ' +
-             'separat darunter. Ausgleichszahlungen zählen hier nicht mit – ihre Historie ' +
-             'findest du im Gemeinsamen Topf.' }
+        { p: 'Alle Buchungen des Monats plus noch offene Fixkosten (orange).' }
       ]);
     }));
     var big = App.el('div', 'hero-amount', App.fmtEUR(expenseSum));
@@ -288,9 +284,6 @@
       });
 
       var blocks = [
-        { p: 'So funktioniert der Topf: Markiert eine Buchung als „Gemeinsam“ – egal, wer sie ' +
-             'anlegt. Sie landet hier mit Name und Farbe der Person, die bezahlt hat. Unten in der ' +
-             'Liste steht die komplette Historie, inklusive Ausgleichszahlungen.' },
         { h: 'Abrechnung über alle Monate' },
         { row: ['Eingezahlt ' + name1, App.fmtEUR(bal.paidSharedCents.p1)] },
         { row: ['Eingezahlt ' + name2, App.fmtEUR(bal.paidSharedCents.p2)] },
@@ -313,9 +306,8 @@
           ? { row: [(App.memberName(bal.debtorId) || bal.debtorId) + ' schuldet ' +
               (App.memberName(bal.debtorId === 'p1' ? 'p2' : 'p1') || ''), App.fmtEUR(bal.owesCents), 'neg'] }
           : { row: ['Offen', App.fmtEUR(0)] },
-        { p: 'Es zahlt immer, wer weniger eingezahlt hat: die Hälfte der Differenz, abzüglich ' +
-             'bereits gebuchter Ausgleichszahlungen. „Ausgleichen“ bucht die Rückzahlung – danach ' +
-             'seid ihr quitt.' }
+        { p: 'Jede „Gemeinsam“-Buchung zahlt in den Topf ein. Wer weniger eingezahlt hat, ' +
+             'gleicht die halbe Differenz aus.' }
       );
       return App.infoContent(blocks);
     }));

@@ -65,9 +65,7 @@
     const card = App.el('div', 'card');
     card.appendChild(App.cardHead('Einnahmen & Ausgaben', function () {
       return App.infoContent([
-        { p: 'Gebuchte Einnahmen (grün), Konsum-Ausgaben (rot) und Sparraten (türkis) der ' +
-             'letzten 6 Monate im Vergleich. Sparen ist Vermögensaufbau und wird deshalb ' +
-             'getrennt von den Ausgaben gezeigt; Ausgleichszahlungen zählen gar nicht mit.' }
+        { p: 'Einnahmen (grün), Ausgaben (rot) und Gespartes (türkis) der letzten 6 Monate.' }
       ]);
     }));
 
@@ -105,10 +103,8 @@
     const card = App.el('div', 'card');
     card.appendChild(App.cardHead('Sparquote', function () {
       return App.infoContent([
-        { p: 'Sparquote = (Sparraten + Übriges) ÷ Einnahmen des aktuellen Monats, auf Basis der ' +
-             'gebuchten Werte. Geld, das in „Sparen & Anlegen“ fließt, zählt also mit – es ist ' +
-             'gespart, nicht ausgegeben.' },
-        { p: 'Als Faustregel: 10 % sind solide, ab 25 % seid ihr richtig stark unterwegs.' }
+        { p: 'Anteil der Einnahmen, der diesen Monat gespart wurde (Sparraten + Übriges). ' +
+             'Ab 10 % solide, ab 25 % stark.' }
       ]);
     }));
 
@@ -252,11 +248,8 @@
     const card = App.el('div', 'card');
     card.appendChild(App.cardHead('Sparverlauf · 6 Monate', function () {
       return App.infoContent([
-        { p: 'Für jeden der letzten 6 Monate wird gerechnet: gebuchte Einnahmen minus gebuchte ' +
-             'Konsum-Ausgaben. Die Linie summiert das auf – sie zeigt, wie euer Polster über ' +
-             'die Zeit wächst oder schrumpft.' },
-        { p: 'Sparraten (Kategorie „Sparen & Anlegen“) zählen dabei als gespart, nicht als ' +
-             'Ausgabe – was aufs Sparkonto oder in den ETF fließt, vergrößert euer Polster.' }
+        { p: 'Euer aufsummiertes Erspartes der letzten 6 Monate (Einnahmen minus Ausgaben; ' +
+             'Sparraten zählen als gespart).' }
       ]);
     }));
 
@@ -292,17 +285,13 @@
     card.appendChild(App.cardHead('Kennzahlen', function () {
       return App.infoContent([
         { h: 'Ø Ausgaben / Monat' },
-        { p: 'Durchschnitt der gebuchten Konsum-Ausgaben über die letzten 6 Monate ' +
-             '(ohne Sparraten).' },
+        { p: 'Durchschnitt der letzten 6 Monate (ohne Sparraten).' },
         { h: 'Ø Sparquote' },
-        { p: 'Wie viel Prozent der Einnahmen im Schnitt gespart wurden – Sparraten plus Übriges ' +
-             '(über die letzten 6 Monate, nur Monate mit Einnahmen).' },
+        { p: 'Wie viel Prozent der Einnahmen im Schnitt gespart wurden.' },
         { h: 'Fixkostenquote' },
-        { p: 'Monatliche Fixkosten geteilt durch die geplanten Einnahmen des aktuellen Monats ' +
-             '(Regeln + gebuchte Einnahmen). Quartals-/Jahreskosten und Sparraten sind hier ' +
-             'nicht enthalten.' },
+        { p: 'Anteil der Fixkosten an den geplanten Einnahmen.' },
         { h: 'Größte Ausgabe' },
-        { p: 'Die höchste einzelne Konsum-Buchung des aktuellen Monats (ohne Sparraten).' }
+        { p: 'Höchste Einzelbuchung des Monats.' }
       ]);
     }));
 
@@ -353,9 +342,7 @@
     const card = App.el('div', 'card');
     card.appendChild(App.cardHead('Gemeinsam vs. privat', function () {
       return App.infoContent([
-        { p: 'Wie viel der gebuchten Konsum-Ausgaben dieses Monats als „Gemeinsam“ markiert ist ' +
-             '(das ist der Topf) und wie viel privat lief. Sparraten und Ausgleichszahlungen ' +
-             'zählen nicht mit.' }
+        { p: 'Wie viel eurer Ausgaben diesen Monat gemeinsam war – und wie viel privat.' }
       ]);
     }));
 
@@ -394,8 +381,7 @@
     const card = App.el('div', 'card');
     card.appendChild(App.cardHead('Top-Ausgaben diesen Monat', function () {
       return App.infoContent([
-        { p: 'Die fünf größten einzelnen Konsum-Buchungen des Monats. Sparraten zählen nicht ' +
-             'dazu – die sind Vermögensaufbau, keine Ausgabe.' }
+        { p: 'Die fünf größten Einzelbuchungen des Monats (ohne Sparraten).' }
       ]);
     }));
 

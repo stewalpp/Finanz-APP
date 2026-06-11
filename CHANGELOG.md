@@ -4,6 +4,13 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (sechster Wurf)
+
+- **Erklär-Overlays radikal gekürzt.** Jedes (i)-Sheet zeigt jetzt: die Zahlen-Zeilen
+  (woraus sich der Wert zusammensetzt) plus maximal ein bis zwei kurze Sätze — statt
+  langer Absätze. (alle Views)
+  SW-Cache `v20`.
+
 ## 2026-06-11 (fünfter Wurf)
 
 - **Sparen ist jetzt app-weit vom Konsum getrennt.** Alles in Kategorie „Sparen & Anlegen"

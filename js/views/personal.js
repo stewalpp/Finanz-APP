@@ -124,14 +124,7 @@
       blocks.push(
         { hr: true },
         { row: ['Bleibt übrig', App.fmtEUR(sum.leftoverCents), sum.leftoverCents >= 0 ? 'pos' : 'neg'] },
-        { h: 'So wird gerechnet' },
-        { p: 'Einnahmen: eigene voll, gemeinsame zur Hälfte. Fixkosten: eigene monatliche Regeln ' +
-             'voll plus die Hälfte aller gemeinsamen – egal, wer sie bezahlt. Quartals- und ' +
-             'Jahreskosten zählen nur in ihrem Fälligkeitsmonat. Gespart: Sparraten und ' +
-             'Spar-Buchungen (Vermögensaufbau, kein Konsum). Private Ausgaben: eigene Buchungen ' +
-             'und private Regeln dieses Monats.' },
-        { p: 'Wer wem wie viel schuldet, ist davon unabhängig – das regelt der Gemeinsame Topf ' +
-             'im Tab „Buchungen“.' }
+        { p: 'Deine Monatsrechnung. Gemeinsames zählt zur Hälfte, Sparen ist kein Konsum.' }
       );
       return App.infoContent(blocks);
     }));

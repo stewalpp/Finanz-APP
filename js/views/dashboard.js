@@ -135,9 +135,7 @@
         [
           { hr: true },
           { row: ['Gesamt', App.fmtEUR(summary.incomeCents), 'pos'] },
-          { p: 'Gezählt werden alle in diesem Monat gebuchten Einnahmen – private und gemeinsame. ' +
-               'Geplante, noch nicht gebuchte Einnahmen aus Regeln (z. B. Gehalt) fließen stattdessen ' +
-               'in „Zusammen frei verfügbar“ ein.' }
+          { p: 'Alle Einnahmen, die diesen Monat gebucht wurden.' }
         ]
       ));
     }));
@@ -152,10 +150,7 @@
         [
           { hr: true },
           { row: ['Gesamt', App.fmtEUR(summary.expenseCents), 'neg'] },
-          { p: 'Alle gebuchten Konsum-Ausgaben dieses Monats – private und gemeinsame. ' +
-               'Sparraten zählen NICHT dazu (das ist Vermögensaufbau, siehe „Gespart“), ' +
-               'Ausgleichszahlungen ebenfalls nicht. Die Diagramme weiter unten zeigen ' +
-               'die Aufteilung in gemeinsam und pro Person.' }
+          { p: 'Alle Ausgaben dieses Monats – ohne Sparraten, die stehen unter „Gespart“.' }
         ]
       ));
     }));
@@ -169,10 +164,8 @@
         [
           { hr: true },
           { row: ['Gesamt', App.fmtEUR(summary.savingsCents), 'saving'] },
-          { p: 'Geld, das ihr in „Sparen & Anlegen“ gesteckt habt (ETF, Sparkonto …). Das ist ' +
-               'kein Konsum, sondern Vermögensaufbau – deshalb zählt es nicht zu den Ausgaben, ' +
-               'sondern steht hier separat. Geplante Sparraten aus Regeln stehen in „Zusammen ' +
-               'frei verfügbar“.' }
+          { p: 'Was ihr diesen Monat in Sparen & Anlegen gesteckt habt – Vermögensaufbau, ' +
+               'keine Ausgabe.' }
         ]
       ));
     }));
@@ -185,10 +178,8 @@
         { row: ['Gespart', '−' + App.fmtEUR(summary.savingsCents), 'saving'] },
         { hr: true },
         { row: ['Übrig', App.fmtEUR(summary.savedCents), savedTone] },
-        { p: '„Übrig“ ist der Ist-Stand: was nach allen gebuchten Ausgaben und Sparraten von den ' +
-             'gebuchten Einnahmen bleibt. „Zusammen frei verfügbar“ (aktuell ' +
-             App.fmtEUR(budget.total.availableCents) + ') schaut dagegen nach vorn und rechnet ' +
-             'auch geplante Einnahmen und noch nicht gebuchte Fixkosten ein.' }
+        { p: 'Was von den gebuchten Einnahmen übrig bleibt. („Frei verfügbar“ oben rechnet ' +
+             'zusätzlich geplante Posten ein.)' }
       ]);
     }));
 
@@ -293,15 +284,8 @@
         { row: ['Bereits ausgegeben', '−' + App.fmtEUR(t.variableSpentCents), 'neg'] },
         { hr: true },
         { row: ['Frei verfügbar', App.fmtEUR(t.availableCents), t.availableCents >= 0 ? 'pos' : 'neg'] },
-        { h: 'So wird gerechnet' },
-        { p: 'Geplante Einnahmen = monatliche Einnahme-Regeln (z. B. Gehalt) plus bereits gebuchte ' +
-             'einmalige Einnahmen. Monatliche Fixkosten = alle monatlichen Regeln (ohne Sparraten). ' +
-             'Quartals- und Jahreskosten zählen nur in ihrem Fälligkeitsmonat – in den anderen Monaten ' +
-             'tauchen sie gar nicht auf. Sparraten (Kategorie „Sparen & Anlegen“) sind Vermögensaufbau ' +
-             'und stehen separat. „Bereits ausgegeben“ sind Buchungen, die zu keiner Regel gehören; ' +
-             'gebuchte Fixkosten werden automatisch ihrer Regel zugeordnet und nie doppelt gezählt.' },
-        { p: 'Pro Person gilt: Gemeinsames zählt für beide je zur Hälfte – egal, wer es bezahlt. Wer ' +
-             'tatsächlich was vorgestreckt hat, regelt der Gemeinsame Topf im Tab „Buchungen“.' }
+        { p: 'So viel bleibt euch diesen Monat voraussichtlich. Gemeinsames zählt pro Person ' +
+             'zur Hälfte.' }
       );
       return App.infoContent(blocks);
     }));
@@ -401,21 +385,16 @@
       const bal = Analysis.coupleBalance(txs);
       const debtor = bal.debtorId;
       return App.infoContent([
-        { p: 'Jede Buchung, die ihr als „Gemeinsam“ markiert, landet im Topf – mit Name und Farbe ' +
-             'der Person, die sie bezahlt hat. So trägt einfach jeder ein, was er fürs Gemeinsame ausgibt.' },
-        { h: 'Stand über alle Monate' },
-        { row: ['Eingezahlt ' + (App.memberName('p1') || 'p1'), App.fmtEUR(bal.paidSharedCents.p1)] },
-        { row: ['Eingezahlt ' + (App.memberName('p2') || 'p2'), App.fmtEUR(bal.paidSharedCents.p2)] },
+        { h: 'Eingezahlt (alle Monate)' },
+        { row: [App.memberName('p1') || 'p1', App.fmtEUR(bal.paidSharedCents.p1)] },
+        { row: [App.memberName('p2') || 'p2', App.fmtEUR(bal.paidSharedCents.p2)] },
         { hr: true },
         debtor
           ? { row: [(App.memberName(debtor) || debtor) + ' schuldet ' +
               (App.memberName(otherMemberId(debtor)) || ''), App.fmtEUR(bal.owesCents), 'neg'] }
           : { row: ['Offen', App.fmtEUR(0)] },
-        { p: 'Der Schuldenstand ist die Hälfte der Differenz eurer Einzahlungen – über alle Monate ' +
-             'hinweg, bereits gebuchte Ausgleichszahlungen sind verrechnet. „Ausgleichen“ bucht die ' +
-             'Rückzahlung und stellt euch auf quitt.' },
-        { p: 'Die komplette Abrechnung mit allen Topf-Buchungen findest du im Tab „Buchungen“ unter ' +
-             '„Gemeinsamer Topf“.' }
+        { p: 'Jede „Gemeinsam“-Buchung zahlt in den Topf ein. Wer weniger eingezahlt hat, ' +
+             'schuldet dem anderen die halbe Differenz.' }
       ]);
     }));
 
@@ -541,11 +520,7 @@
     const card = App.el('div', 'card');
     card.appendChild(App.cardHead('Anstehende Fixkosten', function () {
       return App.infoContent([
-        { p: 'Alle Fixkosten-Regeln, die in diesem Monat fällig sind: monatliche immer, Quartals- ' +
-             'und Jahresposten nur in ihrem Fälligkeitsmonat.' },
-        { p: '„Buchen“ erstellt daraus die echte Buchung – erst dann zählt sie in den Diagrammen ' +
-             'und im Gemeinsamen Topf. Erkennt die App eine passende Buchung von selbst, gilt die ' +
-             'Regel automatisch als bezahlt.' }
+        { p: 'Fixkosten, die diesen Monat fällig sind. „Buchen“ trägt sie als Buchung ein.' }
       ]);
     }));
 
@@ -622,11 +597,8 @@
     const card = App.el('div', 'card');
     card.appendChild(App.cardHead('Gemeinsame Ausgaben nach Kategorie', function () {
       return App.infoContent([
-        { p: 'Zeigt alle in diesem Monat gebuchten Konsum-Ausgaben, die als „Gemeinsam“ markiert ' +
-             'sind, nach Kategorie – also genau das, was im Gemeinsamen Topf gelandet ist. ' +
-             'Sparraten zählen nicht dazu.' },
-        { p: 'Fixkosten erscheinen hier erst, wenn sie gebucht sind – zum Beispiel über „Buchen“ ' +
-             'bei den anstehenden Fixkosten.' }
+        { p: 'Eure gemeinsamen Ausgaben dieses Monats nach Kategorie – alles, was im Topf ' +
+             'gelandet ist.' }
       ]);
     }));
 
@@ -645,11 +617,7 @@
     const card = App.el('div', 'card');
     card.appendChild(App.cardHead('Ausgaben pro Person', function () {
       return App.infoContent([
-        { p: 'Rechnet die gebuchten Konsum-Ausgaben des Monats pro Person zusammen: eigene ' +
-             'private Buchungen voll plus die Hälfte jeder gemeinsamen Buchung – nach demselben ' +
-             '50/50-Prinzip wie überall in der App. Sparraten zählen nicht dazu.' },
-        { p: 'Beispiel: Zahlt eine Person 462 € Camper-Kredit als „Gemeinsam“, erscheinen hier ' +
-             'bei beiden je 231 €.' }
+        { p: 'Eigene Ausgaben plus die Hälfte aller gemeinsamen – pro Person.' }
       ]);
     }));
 
