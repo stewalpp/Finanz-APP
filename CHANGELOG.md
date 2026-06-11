@@ -4,6 +4,15 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (achter Wurf)
+
+- **Übersicht wieder ruhiger.** Die Karte „Zusammen frei verfügbar" zeigt nur noch
+  geplante Einnahmen, gemeinsame Fixkosten und die Gesamtsumme der zusätzlich fälligen
+  Monatskosten. Die Detailposten der zusätzlich fälligen Kosten sind in einem standardmäßig
+  zugeklappten Bereich.
+- **Dashboard ohne gemeinsamen Topf.** Die Topf-Karte wurde aus der Übersicht entfernt.
+  SW-Cache `v22`.
+
 ## 2026-06-11 (siebter Wurf)
 
 - **Fixkosten transparenter getrennt.** Gemeinsame monatliche Fixkosten zählen jetzt nur noch
