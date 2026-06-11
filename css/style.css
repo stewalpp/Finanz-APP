@@ -1,0 +1,1259 @@
+/* ==========================================================================
+   Unsere Finanzen — iOS design system (SPEC §11)
+   Light + dark via prefers-color-scheme, safe-area aware, reduced-motion safe.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Design tokens
+   -------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light dark;
+
+  --bg:        #F2F2F7;
+  --bg-card:   #FFFFFF;
+  --bg-input:  rgba(118, 118, 128, 0.12);
+  --text:      #000000;
+  --text-2:    rgba(60, 60, 67, 0.6);
+  --text-3:    rgba(60, 60, 67, 0.3);
+  --sep:       rgba(60, 60, 67, 0.18);
+  --tint:      #007AFF;
+  --green:     #34C759;
+  --red:       #FF3B30;
+  --orange:    #FF9500;
+  --yellow:    #FFCC00;
+  --purple:    #AF52DE;
+  --pink:      #FF2D55;
+  --teal:      #30B0C7;
+  --indigo:    #5856D6;
+  --gray:      #8E8E93;
+
+  /* internal helpers (not part of the public class contract) */
+  --bar-bg:        rgba(246, 246, 249, 0.82);
+  --segment-bg:    #FFFFFF;
+  --shadow-card:   0 1px 1px rgba(0, 0, 0, 0.03), 0 4px 14px rgba(0, 0, 0, 0.05);
+  --shadow-knob:   0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #000000;
+    --bg-card:   #1C1C1E;
+    --bg-input:  rgba(118, 118, 128, 0.24);
+    --text:      #FFFFFF;
+    --text-2:    rgba(235, 235, 245, 0.6);
+    --text-3:    rgba(235, 235, 245, 0.3);
+    --sep:       rgba(84, 84, 88, 0.5);
+    --tint:      #0A84FF;
+    --green:     #30D158;
+    --red:       #FF453A;
+    --orange:    #FF9F0A;
+    --yellow:    #FFD60A;
+    --purple:    #BF5AF2;
+    --pink:      #FF375F;
+    --teal:      #40C8E0;
+    --indigo:    #5E5CE6;
+    --gray:      #8E8E93;
+
+    --bar-bg:        rgba(18, 18, 20, 0.78);
+    --segment-bg:    #636366;
+    --shadow-card:   none;
+    --shadow-knob:   0 3px 8px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. Base / reset
+   -------------------------------------------------------------------------- */
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--bg);
+}
+
+body {
+  margin: 0 auto;
+  max-width: 640px;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+}
+
+h1, h2, h3, h4, p {
+  margin: 0;
+}
+
+button, input, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--tint);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   3. App header
+   -------------------------------------------------------------------------- */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding-top: env(safe-area-inset-top);
+  background: var(--bar-bg);
+}
+
+@supports ((-webkit-backdrop-filter: blur(20px)) or (backdrop-filter: blur(20px))) {
+  .app-header {
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+
+.header-inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px 8px;
+}
+
+.large-title {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.3px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-input);
+  color: var(--tint);
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.icon-btn:active {
+  opacity: 0.55;
+}
+
+/* --------------------------------------------------------------------------
+   4. Tab bar
+   -------------------------------------------------------------------------- */
+
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  max-width: 640px;
+  z-index: 100;
+  display: flex;
+  background: var(--bar-bg);
+  border-top: 0.5px solid var(--sep);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@supports ((-webkit-backdrop-filter: blur(20px)) or (backdrop-filter: blur(20px))) {
+  .tab-bar {
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+
+.tab-item {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 0 5px;
+  min-height: 50px;
+  color: var(--text-3);
+  transition: color 0.15s ease;
+}
+
+.tab-item svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.tab-item span {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tab-item.active {
+  color: var(--tint);
+}
+
+.tab-item:active {
+  opacity: 0.7;
+}
+
+/* --------------------------------------------------------------------------
+   5. FAB
+   -------------------------------------------------------------------------- */
+
+.fab {
+  position: fixed;
+  right: max(20px, calc(50% - 300px));
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 90;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--tint);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--tint) 42%, transparent),
+              0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.fab svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+}
+
+.fab:active {
+  transform: scale(0.92);
+}
+
+.fab.hidden {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. View container
+   -------------------------------------------------------------------------- */
+
+.view {
+  padding: 16px;
+  animation: view-in 120ms ease-out;
+}
+
+@keyframes view-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
+   7. Cards & grouped lists
+   -------------------------------------------------------------------------- */
+
+.card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  margin-bottom: 10px;
+}
+
+.list-group {
+  background: var(--bg-card);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 14px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.list-row + .list-row {
+  border-top: 0.5px solid var(--sep);
+}
+
+.list-row:active {
+  background: var(--bg-input);
+}
+
+.row-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title {
+  font-size: 16px;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.row-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.row-trailing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.cat-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  background: var(--bg-input); /* views override with category color + '2E' alpha */
+}
+
+/* --------------------------------------------------------------------------
+   8. Amounts & badges
+   -------------------------------------------------------------------------- */
+
+.amount-pos {
+  color: var(--green);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.amount-neg {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.amount-neg.strong {
+  color: var(--red);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.badge-green {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 18%, transparent);
+}
+
+.badge-orange {
+  color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 18%, transparent);
+}
+
+.badge-red {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 18%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   9. Buttons
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.btn:active {
+  opacity: 0.7;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.btn-primary {
+  background: var(--tint);
+  color: #FFFFFF;
+}
+
+.btn-secondary {
+  background: color-mix(in srgb, var(--tint) 12%, transparent);
+  color: var(--tint);
+}
+
+.btn-destructive {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+}
+
+.btn-small {
+  display: inline-block;
+  width: auto;
+  padding: 7px 14px;
+  font-size: 14px;
+  border-radius: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   10. Segmented control
+   -------------------------------------------------------------------------- */
+
+.segmented {
+  display: flex;
+  background: var(--bg-input);
+  border-radius: 9px;
+  padding: 2px;
+}
+
+.segment {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 7px;
+  padding: 7px 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.segment.active {
+  background: var(--segment-bg);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* --------------------------------------------------------------------------
+   11. Inputs & forms
+   -------------------------------------------------------------------------- */
+
+.input {
+  display: block;
+  width: 100%;
+  background: var(--bg-input);
+  border: 0;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 16px; /* >= 16px: prevents iOS focus zoom */
+  color: var(--text);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input::placeholder {
+  color: var(--text-3);
+}
+
+.input:focus {
+  outline: 2px solid color-mix(in srgb, var(--tint) 65%, transparent);
+  outline-offset: 0;
+}
+
+.input::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+input[type='date'].input {
+  min-height: 47px;
+}
+
+select.input {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238E8E93' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+}
+
+textarea.input {
+  min-height: 96px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.amount-input {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+  caret-color: var(--tint);
+  font-variant-numeric: tabular-nums;
+  padding: 6px 0;
+}
+
+.amount-input::placeholder {
+  color: var(--text-3);
+}
+
+.amount-input:focus {
+  outline: none;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-bottom: 6px;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+}
+
+.form-row > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-error {
+  color: var(--red);
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   12. Switch
+   -------------------------------------------------------------------------- */
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch-track {
+  position: relative;
+  display: block;
+  width: 51px;
+  height: 31px;
+  border-radius: 100px;
+  background: var(--bg-input);
+  transition: background-color 0.2s ease;
+}
+
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-knob);
+  transition: transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+
+.switch input:checked + .switch-track {
+  background: var(--green);
+}
+
+.switch input:checked + .switch-track::after {
+  transform: translateX(20px);
+}
+
+.switch input:focus-visible + .switch-track {
+  outline: 2px solid var(--tint);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   13. Category grid & chips
+   -------------------------------------------------------------------------- */
+
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.cat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: var(--bg-input);
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  padding: 8px 4px;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text);
+  min-height: 58px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.cat-chip > span:first-child {
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.cat-chip:active {
+  opacity: 0.7;
+}
+
+.cat-chip.active {
+  background: color-mix(in srgb, var(--tint) 15%, transparent);
+  border-color: var(--tint);
+  color: var(--tint);
+  font-weight: 600;
+}
+
+.chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 12px;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex-shrink: 0;
+  background: var(--bg-input);
+  border-radius: 100px;
+  padding: 7px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.chip:active {
+  opacity: 0.7;
+}
+
+.chip.active {
+  background: var(--tint);
+  color: #FFFFFF;
+}
+
+/* --------------------------------------------------------------------------
+   14. Searchbar
+   -------------------------------------------------------------------------- */
+
+.searchbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border-radius: 10px;
+  padding: 0 12px;
+  margin-bottom: 12px;
+}
+
+.searchbar::before {
+  content: '🔍';
+  font-size: 14px;
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.searchbar input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  padding: 10px 0;
+  min-height: 44px;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.searchbar input::placeholder {
+  color: var(--text-3);
+}
+
+.searchbar input:focus {
+  outline: none;
+}
+
+.searchbar:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--tint) 65%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   15. Month navigation
+   -------------------------------------------------------------------------- */
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.month-nav-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-input);
+  color: var(--tint);
+  font-size: 19px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.month-nav-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.month-nav-btn:active {
+  opacity: 0.55;
+}
+
+.month-nav-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.month-nav-title {
+  font-size: 17px;
+  font-weight: 600;
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   16. Stats
+   -------------------------------------------------------------------------- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.stat {
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: 3px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.stat-value {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.stat-value.pos {
+  color: var(--green);
+}
+
+.stat-value.neg {
+  color: var(--red);
+}
+
+/* --------------------------------------------------------------------------
+   17. Legend, tips, suggestions, progress
+   -------------------------------------------------------------------------- */
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tip-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  border-left: 3px solid var(--gray);
+  padding: 13px 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-card);
+}
+
+.tip-card.tone-good {
+  border-left-color: var(--green);
+}
+
+.tip-card.tone-info {
+  border-left-color: var(--tint);
+}
+
+.tip-card.tone-warn {
+  border-left-color: var(--orange);
+}
+
+.suggestion-card {
+  background: var(--bg-card);
+  border: 1.5px dashed var(--tint);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.progress {
+  width: 100%;
+  height: 8px;
+  border-radius: 100px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 100px;
+  background: var(--green);
+  transition: width 0.4s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+
+/* --------------------------------------------------------------------------
+   18. Empty states, section titles, link rows, danger
+   -------------------------------------------------------------------------- */
+
+.empty-state {
+  text-align: center;
+  padding: 36px 16px;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.empty-state > div:first-child,
+.empty-state > span:first-child {
+  display: block;
+  font-size: 40px;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+
+.empty-state .btn {
+  margin-top: 16px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  margin: 18px 4px 8px;
+}
+
+.link-row {
+  display: block;
+  width: 100%;
+  padding-top: 10px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--tint);
+  min-height: 34px;
+  transition: opacity 0.15s ease;
+}
+
+.link-row:active {
+  opacity: 0.6;
+}
+
+.danger {
+  color: var(--red);
+}
+
+.danger .row-title {
+  color: var(--red);
+}
+
+/* --------------------------------------------------------------------------
+   19. Bottom sheet
+   -------------------------------------------------------------------------- */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.4);
+  animation: backdrop-in 200ms ease-out;
+}
+
+.sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  max-width: 640px;
+  z-index: 210;
+  background: var(--bg-card);
+  border-radius: 20px 20px 0 0;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+  animation: sheet-up 280ms cubic-bezier(0.32, 0.72, 0.3, 1);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 5px;
+  border-radius: 100px;
+  background: var(--sep);
+  margin: 6px auto 10px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sheet-title {
+  font-size: 20px;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sheet-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-input);
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sheet-close:active {
+  opacity: 0.55;
+}
+
+/* --------------------------------------------------------------------------
+   20. Alert (App.confirm)
+   -------------------------------------------------------------------------- */
+
+.alert-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: backdrop-in 180ms ease-out;
+}
+
+.alert {
+  width: 270px;
+  max-width: 100%;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+  overflow: hidden;
+  text-align: center;
+  padding: 18px 18px 0;
+  animation: alert-in 220ms cubic-bezier(0.3, 1.2, 0.4, 1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+@supports ((-webkit-backdrop-filter: blur(24px)) or (backdrop-filter: blur(24px))) {
+  .alert {
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+  }
+}
+
+@keyframes alert-in {
+  from { transform: scale(1.12); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.alert h3,
+.alert .alert-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.alert p,
+.alert .alert-message {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.alert-actions {
+  display: flex;
+  margin: 14px -18px 0;
+  border-top: 0.5px solid var(--sep);
+}
+
+.alert-actions button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 12px 8px;
+  min-height: 44px;
+  font-size: 17px;
+  color: var(--tint);
+  transition: background-color 0.1s ease;
+}
+
+.alert-actions button + button {
+  border-left: 0.5px solid var(--sep);
+}
+
+.alert-actions button:last-child {
+  font-weight: 600;
+}
+
+.alert-actions button:active {
+  background: var(--bg-input);
+}
+
+.alert-actions button.destructive,
+.alert-actions .destructive {
+  color: var(--red);
+}
+
+/* --------------------------------------------------------------------------
+   21. Toast
+   -------------------------------------------------------------------------- */
+
+.toast {
+  position: fixed;
+  bottom: calc(100px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 400;
+  max-width: min(86vw, 560px);
+  background: rgba(50, 50, 55, 0.92);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 18px;
+  border-radius: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  animation: toast-in 240ms cubic-bezier(0.3, 1.1, 0.4, 1);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* --------------------------------------------------------------------------
+   22. Spinner
+   -------------------------------------------------------------------------- */
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  vertical-align: -4px;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------------------
+   23. Reduced motion
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
