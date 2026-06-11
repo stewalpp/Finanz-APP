@@ -1,7 +1,7 @@
 /* Service worker for "Unsere Finanzen" — precache app shell, stale-while-revalidate. */
 'use strict';
 
-const CACHE = 'unsere-finanzen-v23';
+const CACHE = 'unsere-finanzen-v24';
 
 const PRECACHE = [
   './',
@@ -16,7 +16,6 @@ const PRECACHE = [
   'js/views/transactions.js',
   'js/views/recurring.js',
   'js/views/personal.js',
-  'js/views/insights.js',
   'js/views/settings.js',
   'js/app.js',
   'icons/icon-192.png',

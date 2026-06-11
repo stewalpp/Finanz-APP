@@ -4,6 +4,12 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (zehnter Wurf)
+
+- **Analyse-Tab entfernt.** Die App-Navigation besteht vorerst aus Übersicht,
+  Persönlich, Buchungen und Mehr; die Analyse-View wird nicht mehr geladen oder gecached.
+  SW-Cache `v24`.
+
 ## 2026-06-11 (neunter Wurf)
 
 - **Persönlich trennt gemeinsame Kosten klarer.** Gemeinsame Fixkosten sind jetzt in
