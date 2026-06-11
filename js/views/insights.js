@@ -270,6 +270,51 @@
     return card;
   }
 
+  function buildMonthlyNetCard(txs, currentMonth) {
+    const card = App.el('div', 'card hero-card');
+    card.appendChild(App.cardHead('Gespart oder verloren', function () {
+      return App.infoContent([
+        { p: 'Pro Monat: Einnahmen minus Ausgaben. Sparraten zählen dabei als gespart, nicht als Ausgabe.' }
+      ]);
+    }));
+
+    const months = Analysis.trend(txs, 12, currentMonth).map(function (m) {
+      return {
+        month: m.month,
+        label: monthShortLabel(m.month),
+        value: m.incomeCents - m.expenseCents
+      };
+    });
+    const current = months.length ? months[months.length - 1].value : 0;
+    const tone = current >= 0 ? 'var(--green)' : 'var(--red)';
+
+    const big = App.el('div', 'hero-amount', App.fmtEUR(current));
+    big.style.color = tone;
+    card.appendChild(big);
+    card.appendChild(App.el('div', 'hero-sub',
+      current >= 0 ? 'im aktuellen Monat im Plus' : 'im aktuellen Monat im Minus'));
+
+    const wrap = App.el('div');
+    wrap.style.marginTop = '12px';
+    Charts.line(wrap, months, { height: 190, color: tone, formatValue: fmtAxisValue });
+    card.appendChild(wrap);
+
+    const latest = months.slice(-6);
+    latest.forEach(function (m) {
+      const row = App.el('div', 'legend-row');
+      const dot = App.el('span', 'dot');
+      dot.style.background = m.value >= 0 ? 'var(--green)' : 'var(--red)';
+      row.appendChild(dot);
+      const label = App.el('span', '', App.fmtMonth(m.month));
+      label.style.flex = '1';
+      row.appendChild(label);
+      row.appendChild(App.el('span', m.value >= 0 ? 'amount-pos' : 'amount-neg', App.fmtEUR(m.value)));
+      card.appendChild(row);
+    });
+
+    return card;
+  }
+
   // ---------------------------------------------------------------------------
   // 6. Key metrics grid
   // ---------------------------------------------------------------------------
@@ -420,27 +465,19 @@
     const view = App.el('div', 'view');
 
     const txs = Store.getTransactions();
-    const rules = Store.getRecurring();
     const currentMonth = App.monthKey(App.todayISO());
 
     const hasData = txs.some(function (t) { return t.category !== 'ausgleich'; });
     if (!hasData) {
       view.appendChild(emptyState(
         '📊',
-        'Noch nicht genug Daten. Erfasse ein paar Buchungen, dann zeigen wir dir hier Trends, deine Sparquote und Spartipps.'
+        'Noch nicht genug Daten. Erfasse ein paar Buchungen, dann siehst du hier, ob ihr monatlich im Plus oder Minus seid.'
       ));
       root.appendChild(view);
       return;
     }
 
-    view.appendChild(buildSavingsTrendCard(txs, currentMonth));
-    view.appendChild(buildTrendCard(txs, currentMonth));
-    view.appendChild(buildMetricsCard(txs, rules, currentMonth));
-    view.appendChild(buildSavingsCard(txs, currentMonth));
-    view.appendChild(buildSharedPrivateCard(txs, currentMonth));
-    view.appendChild(buildTopExpensesCard(txs, currentMonth));
-    view.appendChild(buildTipsCard(txs, rules));
-    view.appendChild(buildCompareCard(txs, currentMonth));
+    view.appendChild(buildMonthlyNetCard(txs, currentMonth));
 
     root.appendChild(view);
   }

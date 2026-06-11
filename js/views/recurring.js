@@ -585,7 +585,7 @@
     App.showSheet({
       title: isEdit
         ? (rule.type === 'income' ? 'Einnahme bearbeiten'
-          : (rule.privateExpense === true ? 'Private Ausgabe bearbeiten' : 'Fixkosten bearbeiten'))
+          : (rule.shared === true ? 'Fixkosten bearbeiten' : 'Private laufende Kosten bearbeiten'))
         : (defaults.title || (st.type === 'income' ? 'Wiederkehrende Einnahme' : 'Neue Fixkosten')),
       content: content
     });

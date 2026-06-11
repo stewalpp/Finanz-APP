@@ -265,6 +265,34 @@
     return wrap;
   }
 
+  function sectionLabel(text) {
+    const el = App.el('div', '', text);
+    el.style.color = 'var(--text-3)';
+    el.style.fontSize = '12px';
+    el.style.textTransform = 'uppercase';
+    el.style.letterSpacing = '0.05em';
+    el.style.marginTop = '8px';
+    return el;
+  }
+
+  function ownerSuffix(item) {
+    const name = App.memberName(item.payerId) || item.payerId || '';
+    return item.shared ? 'Gemeinsam · zahlt ' + name : name;
+  }
+
+  function intervalWord(interval) {
+    return interval === 'quarterly' ? 'vierteljährlich'
+      : interval === 'yearly' ? 'jährlich' : 'monatlich';
+  }
+
+  function addBudgetItemRows(parent, items) {
+    (items || []).forEach(function (item) {
+      const suffix = ownerSuffix(item);
+      const label = (item.name || App.cat(item.category).label) + (suffix ? ' · ' + suffix : '');
+      parent.appendChild(budgetLine(label, item.amountCents, '−', 'neg', true));
+    });
+  }
+
   function buildBudgetCard(budget) {
     const t = budget.total;
 
@@ -272,72 +300,81 @@
     card.appendChild(App.cardHead('Zusammen frei verfügbar · ' + App.fmtMonth(selectedMonth), function () {
       const blocks = [
         { row: ['Geplante Einnahmen', '+' + App.fmtEUR(t.plannedIncomeCents), 'pos'] },
-        { row: ['Monatliche Fixkosten', '−' + App.fmtEUR(t.fixedCents), 'neg'] }
+        { row: ['Gemeinsame Fixkosten', '−' + App.fmtEUR(t.fixedCents), 'neg'] }
       ];
+      (budget.sharedFixedItems || []).forEach(function (item) {
+        blocks.push({ row: [item.name || App.cat(item.category).label, '−' + App.fmtEUR(item.amountCents), 'neg'] });
+      });
+      if (t.privateRecurringCents > 0) {
+        blocks.push({ h: 'Private laufende Kosten' });
+        blocks.push({ row: ['Summe', '−' + App.fmtEUR(t.privateRecurringCents), 'neg'] });
+        (budget.privateRecurringItems || []).forEach(function (item) {
+          blocks.push({ row: [(item.name || App.cat(item.category).label) + ' · ' + ownerSuffix(item), '−' + App.fmtEUR(item.amountCents), 'neg'] });
+        });
+      }
       if (t.nonMonthlyDueCents > 0) {
-        blocks.push({ row: ['Quartals-/Jahreskosten (diesen Monat fällig)', '−' + App.fmtEUR(t.nonMonthlyDueCents), 'neg'] });
+        blocks.push({ h: 'Diesen Monat zusätzlich fällig' });
+        blocks.push({ row: ['Summe', '−' + App.fmtEUR(t.nonMonthlyDueCents), 'neg'] });
+        (budget.nonMonthlyItems || []).forEach(function (item) {
+          blocks.push({ row: [(item.name || App.cat(item.category).label) + ' · ' + intervalWord(item.interval), '−' + App.fmtEUR(item.amountCents), 'neg'] });
+        });
       }
       if (t.savingsCents > 0) {
         blocks.push({ row: ['Sparraten', '−' + App.fmtEUR(t.savingsCents), 'saving'] });
       }
       blocks.push(
-        { row: ['Bereits ausgegeben', '−' + App.fmtEUR(t.variableSpentCents), 'neg'] },
+        { row: ['Variable Ausgaben (gebucht)', '−' + App.fmtEUR(t.variableSpentCents), 'neg'] },
         { hr: true },
         { row: ['Frei verfügbar', App.fmtEUR(t.availableCents), t.availableCents >= 0 ? 'pos' : 'neg'] },
-        { p: 'So viel bleibt euch diesen Monat voraussichtlich. Gemeinsames zählt pro Person ' +
-             'zur Hälfte.' }
+        { p: 'Gemeinsame Fixkosten sind nur als „Gemeinsam“ markierte Monatsregeln. Private laufende Kosten werden getrennt gezeigt und trotzdem vom Budget abgezogen.' }
       );
       return App.infoContent(blocks);
     }));
 
-    // combined hero number ("wieviel wir zusammen haben")
     const big = App.el('div', 'hero-amount', App.fmtEUR(t.availableCents));
     big.style.color = t.availableCents >= 0 ? 'var(--green)' : 'var(--red)';
     card.appendChild(big);
     card.appendChild(App.el('div', 'hero-sub',
       t.availableCents >= 0
-        ? 'bleiben euch diesen Monat nach Fixkosten & Ausgaben'
+        ? 'bleiben euch nach gemeinsamen Fixkosten, privaten Kosten und Buchungen'
         : 'über dem geplanten Budget'));
 
-    // breakdown
     const bd = App.el('div');
     bd.style.marginTop = '10px';
     bd.appendChild(budgetLine('Geplante Einnahmen', t.plannedIncomeCents, '+', 'pos', false));
-    bd.appendChild(budgetLine('Monatliche Fixkosten', t.fixedCents, '−', 'neg', false));
-    // quarterly + yearly costs due this month, listed individually
-    // (never smoothed into the monthly fixed costs)
-    if (budget.nonMonthlyItems.length) {
-      const yTitle = App.el('div', '', 'Diesen Monat zusätzlich fällig');
-      yTitle.style.color = 'var(--text-3)';
-      yTitle.style.fontSize = '12px';
-      yTitle.style.textTransform = 'uppercase';
-      yTitle.style.letterSpacing = '0.05em';
-      yTitle.style.marginTop = '6px';
-      bd.appendChild(yTitle);
+    bd.appendChild(budgetLine('Gemeinsame Fixkosten', t.fixedCents, '−', 'neg', false));
+
+    if ((budget.sharedFixedItems || []).length) {
+      addBudgetItemRows(bd, budget.sharedFixedItems);
+    }
+
+    if (t.privateRecurringCents > 0) {
+      bd.appendChild(budgetLine('Private laufende Kosten', t.privateRecurringCents, '−', 'neg', false));
+      addBudgetItemRows(bd, budget.privateRecurringItems);
+    }
+
+    if ((budget.nonMonthlyItems || []).length) {
+      bd.appendChild(sectionLabel('Diesen Monat zusätzlich fällig'));
       budget.nonMonthlyItems.forEach(function (item) {
-        const word = item.interval === 'quarterly' ? 'vierteljährlich' : 'jährlich';
-        bd.appendChild(budgetLine('📅 ' + item.name + ' (' + word + ')', item.amountCents, '−', 'neg', true));
+        const suffix = ownerSuffix(item);
+        const label = (item.name || App.cat(item.category).label) + ' · ' + intervalWord(item.interval) +
+          (suffix ? ' · ' + suffix : '');
+        bd.appendChild(budgetLine(label, item.amountCents, '−', 'neg', true));
       });
     }
     if (t.savingsCents > 0) {
       bd.appendChild(budgetLine('Sparraten', t.savingsCents, '−', 'saving', false));
     }
-    bd.appendChild(budgetLine('Bereits ausgegeben', t.variableSpentCents, '−', 'neg', false));
+    bd.appendChild(budgetLine('Variable Ausgaben (gebucht)', t.variableSpentCents, '−', 'neg', false));
     card.appendChild(bd);
 
-    // per-person visualisation ("jeder einzeln")
     const sep = App.el('div');
     sep.style.height = '0.5px';
     sep.style.background = 'var(--sep)';
     sep.style.margin = '12px 0 6px';
     card.appendChild(sep);
 
-    const perTitle = App.el('div', '', 'Pro Person');
-    perTitle.style.color = 'var(--text-3)';
-    perTitle.style.fontSize = '12px';
-    perTitle.style.textTransform = 'uppercase';
-    perTitle.style.letterSpacing = '0.05em';
-    card.appendChild(perTitle);
+    card.appendChild(sectionLabel('Pro Person verfügbar'));
 
     const maxRef = Math.max(
       Math.abs(budget.byPerson.p1.availableCents),
@@ -348,6 +385,67 @@
       card.appendChild(personBar(pid, budget.byPerson[pid].availableCents, maxRef));
     });
 
+    return card;
+  }
+
+  function personMonthBlock(pid, sum) {
+    const wrap = App.el('div');
+    wrap.style.padding = '12px 0';
+    wrap.style.borderTop = '0.5px solid var(--sep)';
+
+    const head = App.el('div');
+    head.style.display = 'flex';
+    head.style.justifyContent = 'space-between';
+    head.style.alignItems = 'baseline';
+    head.style.gap = '12px';
+
+    const name = App.el('div', '', App.memberName(pid) || (pid === 'p1' ? 'Partner 1' : 'Partner 2'));
+    name.style.fontWeight = '700';
+    name.style.fontSize = '17px';
+    name.style.color = memberColor(pid);
+    head.appendChild(name);
+
+    const spent = sum.fixedCents + sum.privateRecurringCents + sum.nonMonthlyDueCents +
+      sum.privateSpentCents + sum.sharedVariableCents;
+    const spentEl = App.el('div', 'amount-neg', '−' + App.fmtEUR(spent));
+    spentEl.style.fontWeight = '700';
+    spentEl.style.fontSize = '17px';
+    head.appendChild(spentEl);
+    wrap.appendChild(head);
+
+    const rows = App.el('div');
+    rows.style.marginTop = '6px';
+    rows.appendChild(budgetLine('Einnahmen', sum.incomeCents, '+', 'pos', true));
+    rows.appendChild(budgetLine('Gemeinsame Fixkosten (Anteil)', sum.fixedCents, '−', 'neg', true));
+    if (sum.privateRecurringCents > 0) {
+      rows.appendChild(budgetLine('Private laufende Kosten', sum.privateRecurringCents, '−', 'neg', true));
+    }
+    if (sum.nonMonthlyDueCents > 0) {
+      rows.appendChild(budgetLine('Zusätzlich fällig', sum.nonMonthlyDueCents, '−', 'neg', true));
+    }
+    rows.appendChild(budgetLine('Private Ausgaben (gebucht)', sum.privateSpentCents, '−', 'neg', true));
+    if (sum.sharedVariableCents > 0) {
+      rows.appendChild(budgetLine('Gemeinsame Ausgaben (½)', sum.sharedVariableCents, '−', 'neg', true));
+    }
+    if (sum.savingsCents > 0) {
+      rows.appendChild(budgetLine('Gespart', sum.savingsCents, '−', 'saving', true));
+    }
+    rows.appendChild(budgetLine('Bleibt', sum.leftoverCents, '', sum.leftoverCents >= 0 ? 'pos' : 'neg', true));
+    wrap.appendChild(rows);
+    return wrap;
+  }
+
+  function buildPersonMonthCard(txs, rules) {
+    const card = App.el('div', 'card');
+    card.appendChild(App.cardHead('Monat nach Person', function () {
+      return App.infoContent([
+        { p: 'Zeigt pro Person, welche Einnahmen da sind und welche Kosten dagegen laufen.' },
+        { p: 'Gemeinsame Monats-Fixkosten zählen je zur Hälfte. Private laufende Kosten bleiben bei der Person, die sie bezahlt.' }
+      ]);
+    }));
+    ['p1', 'p2'].forEach(function (pid) {
+      card.appendChild(personMonthBlock(pid, Analysis.personalSummary(txs, rules, pid, selectedMonth)));
+    });
     return card;
   }
 
@@ -492,7 +590,10 @@
 
     const main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', rule.name));
-    main.appendChild(App.el('div', 'row-sub', App.fmtDate(item.dueDateISO)));
+    main.appendChild(App.el('div', 'row-sub',
+      App.fmtDate(item.dueDateISO) + ' · ' +
+      (rule.shared === true ? 'Gemeinsam · zahlt ' : 'Privat · ') +
+      (App.memberName(rule.payerId) || rule.payerId || '')));
 
     const trailing = App.el('div', 'row-trailing');
     const isIncome = rule.type === 'income';
@@ -518,22 +619,22 @@
 
   function buildUpcomingCard(rules, txs) {
     const card = App.el('div', 'card');
-    card.appendChild(App.cardHead('Anstehende Fixkosten', function () {
+    card.appendChild(App.cardHead('Anstehende wiederkehrende Kosten', function () {
       return App.infoContent([
-        { p: 'Fixkosten, die diesen Monat fällig sind. „Buchen“ trägt sie als Buchung ein.' }
+        { p: 'Wiederkehrende Kosten, die diesen Monat fällig sind. Gemeinsame und private Posten bleiben erkennbar getrennt.' }
       ]);
     }));
 
     const upcoming = Analysis.upcomingForMonth(rules, txs, selectedMonth, App.todayISO());
     if (!upcoming.length) {
-      card.appendChild(App.el('p', 'row-sub', 'In diesem Monat sind keine Fixkosten fällig.'));
+      card.appendChild(App.el('p', 'row-sub', 'In diesem Monat sind keine wiederkehrenden Kosten fällig.'));
     } else {
       upcoming.slice(0, 5).forEach(function (item) {
         card.appendChild(upcomingRow(item));
       });
     }
 
-    const link = App.el('div', 'link-row', 'Fixkosten verwalten →');
+    const link = App.el('div', 'link-row', 'Kosten verwalten →');
     link.setAttribute('role', 'button');
     link.addEventListener('click', function () { App.switchTab('personal'); });
     card.appendChild(link);
@@ -718,49 +819,6 @@
   }
 
   // ---------------------------------------------------------------------------
-  // First use (no transactions at all)
-  // ---------------------------------------------------------------------------
-  function buildFirstUse() {
-    const box = App.el('div', 'empty-state');
-
-    const em = App.el('div', '', '👋');
-    em.style.fontSize = '40px';
-    em.style.marginBottom = '8px';
-    box.appendChild(em);
-
-    const title = App.el('div', '', 'Willkommen bei euren Finanzen!');
-    title.style.fontSize = '17px';
-    title.style.fontWeight = '700';
-    title.style.color = 'var(--text)';
-    title.style.marginBottom = '6px';
-    box.appendChild(title);
-
-    box.appendChild(App.el('div', '',
-      'Erfasst eure Ausgaben und Einnahmen gemeinsam – schnell, privat und offline.'));
-
-    const startBtn = App.el('button', 'btn btn-primary', 'Erste Buchung');
-    startBtn.type = 'button';
-    startBtn.style.marginTop = '18px';
-    startBtn.addEventListener('click', function () {
-      window.Views.transactions.openEditor(null);
-    });
-    box.appendChild(startBtn);
-
-    const demoBtn = App.el('button', 'btn btn-secondary', 'Demo-Daten laden');
-    demoBtn.type = 'button';
-    demoBtn.style.marginTop = '10px';
-    demoBtn.addEventListener('click', function () { App.switchTab('settings'); });
-    box.appendChild(demoBtn);
-
-    const hint = App.el('div', '', 'Tipp: Demo-Daten findest du unter „Mehr“.');
-    hint.style.fontSize = '13px';
-    hint.style.marginTop = '10px';
-    box.appendChild(hint);
-
-    return box;
-  }
-
-  // ---------------------------------------------------------------------------
   // Detected recurring costs (moved here from the former Fixkosten tab)
   // ---------------------------------------------------------------------------
   const INTERVAL_WORDS = { monthly: 'monatlich', quarterly: 'vierteljährlich', yearly: 'jährlich' };
@@ -816,19 +874,12 @@
     const view = App.el('div', 'view');
 
     const txs = Store.getTransactions();
-    if (!txs.length) {
-      view.appendChild(buildFirstUse());
-      root.appendChild(view);
-      return;
-    }
-
     const rules = Store.getRecurring();
-    const summary = Analysis.monthlySummary(txs, selectedMonth);
     const budget = Analysis.availableBudget(txs, rules, selectedMonth);
 
     view.appendChild(buildMonthNav());
     view.appendChild(buildBudgetCard(budget));       // hero: combined + per-person
-    view.appendChild(buildStatGrid(summary, txs, budget));
+    view.appendChild(buildPersonMonthCard(txs, rules));
     var suggestionsCard = buildSuggestionsCard(txs, rules);
     if (suggestionsCard) view.appendChild(suggestionsCard);
     view.appendChild(buildSharedCategoryCard(txs));

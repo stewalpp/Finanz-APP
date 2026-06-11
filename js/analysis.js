@@ -93,6 +93,14 @@
     return item.category === 'sparen';
   }
 
+  function isSharedFixedRule(rule) {
+    return rule && rule.type === 'expense' && rule.shared === true && !isSavings(rule);
+  }
+
+  function isPrivateRecurringRule(rule) {
+    return rule && rule.type === 'expense' && rule.shared !== true && !isSavings(rule);
+  }
+
   function monthlySummary(txs, monthKey) {
     var incomeCents = 0;
     var expenseCents = 0;   // consumption only, savings excluded
@@ -197,7 +205,7 @@
     var list = rules || [];
     for (var i = 0; i < list.length; i++) {
       var r = list[i];
-      if (!r || !r.active || r.type !== 'expense' || isSavings(r)) continue;
+      if (!r || !r.active || !isSharedFixedRule(r)) continue;
       sum += monthlyEquivCents(r);
     }
     return Math.round(sum);
@@ -277,11 +285,20 @@
     var ruleList = rules || [];
     var txList = txs || [];
 
-    var total = { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, savings: 0, variableSpent: 0 };
-    var per = {
-      p1: { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, savings: 0, variableSpent: 0 },
-      p2: { plannedIncome: 0, fixed: 0, nonMonthlyDue: 0, savings: 0, variableSpent: 0 }
+    var total = {
+      plannedIncome: 0,
+      fixed: 0,
+      privateRecurring: 0,
+      nonMonthlyDue: 0,
+      savings: 0,
+      variableSpent: 0
     };
+    var per = {
+      p1: { plannedIncome: 0, fixed: 0, privateRecurring: 0, nonMonthlyDue: 0, savings: 0, variableSpent: 0 },
+      p2: { plannedIncome: 0, fixed: 0, privateRecurring: 0, nonMonthlyDue: 0, savings: 0, variableSpent: 0 }
+    };
+    var sharedFixedItems = [];
+    var privateRecurringItems = [];
     var nonMonthlyItems = [];
 
     function add(field, amt, payerId, shared) {
@@ -314,14 +331,35 @@
             category: r.category,
             interval: r.interval,
             payerId: r.payerId,
-            shared: isShared
+            shared: isShared,
+            privateExpense: !isShared
           });
         }
       } else {
         var eq = monthlyEquivCents(r);
         if (r.type === 'income') add('plannedIncome', eq, r.payerId, isShared);
         else if (r.type === 'expense' && isSavings(r)) add('savings', eq, r.payerId, isShared);
-        else if (r.type === 'expense') add('fixed', eq, r.payerId, isShared);
+        else if (isSharedFixedRule(r)) {
+          add('fixed', eq, r.payerId, true);
+          sharedFixedItems.push({
+            id: r.id,
+            name: r.name,
+            amountCents: eq,
+            category: r.category,
+            payerId: r.payerId,
+            shared: true
+          });
+        } else if (isPrivateRecurringRule(r)) {
+          add('privateRecurring', eq, r.payerId, false);
+          privateRecurringItems.push({
+            id: r.id,
+            name: r.name,
+            amountCents: eq,
+            category: r.category,
+            payerId: r.payerId,
+            shared: false
+          });
+        }
       }
     }
 
@@ -344,22 +382,26 @@
     function finalize(o) {
       var pi = Math.round(o.plannedIncome);
       var fx = Math.round(o.fixed);
+      var pr = Math.round(o.privateRecurring);
       var nm = Math.round(o.nonMonthlyDue);
       var sv = Math.round(o.savings);
       var vs = Math.round(o.variableSpent);
       return {
         plannedIncomeCents: pi,
         fixedCents: fx,
+        privateRecurringCents: pr,
         nonMonthlyDueCents: nm,
         savingsCents: sv,
         variableSpentCents: vs,
-        availableCents: pi - fx - nm - sv - vs
+        availableCents: pi - fx - pr - nm - sv - vs
       };
     }
 
     return {
       total: finalize(total),
       byPerson: { p1: finalize(per.p1), p2: finalize(per.p2) },
+      sharedFixedItems: sharedFixedItems,
+      privateRecurringItems: privateRecurringItems,
       nonMonthlyItems: nonMonthlyItems
     };
   }
@@ -404,15 +446,16 @@
             name: r.name,
             shareCents: Math.round(amt),
             interval: r.interval,
-            shared: r.shared === true
+            shared: r.shared === true,
+            privateExpense: r.shared !== true
           });
         }
       } else {
         var eq = monthlyEquivCents(r) * share;
         if (r.type === 'income') recurringIncome += eq;
         else if (r.type === 'expense' && isSavings(r)) savings += eq;
-        else if (r.type === 'expense' && r.privateExpense === true) recurringPrivateExpense += eq;
-        else if (r.type === 'expense') fixed += eq;
+        else if (r.type === 'expense' && r.shared === true) fixed += eq;
+        else if (r.type === 'expense') recurringPrivateExpense += eq;
       }
     }
 
@@ -454,7 +497,9 @@
     fixed = Math.round(fixed);
     nonMonthlyDue = Math.round(nonMonthlyDue);
     var savingsCents = Math.round(savings);
-    privateExpenseCents = Math.round(privateExpenseCents + recurringPrivateExpense);
+    var privateRecurringCents = Math.round(recurringPrivateExpense);
+    var privateSpentCents = Math.round(privateExpenseCents);
+    privateExpenseCents = privateRecurringCents + privateSpentCents;
     var sharedVariableCents = Math.round(sharedVariable);
 
     return {
@@ -463,6 +508,8 @@
       nonMonthlyDueCents: nonMonthlyDue,
       nonMonthlyItems: nonMonthlyItems,
       savingsCents: savingsCents,
+      privateRecurringCents: privateRecurringCents,
+      privateSpentCents: privateSpentCents,
       privateExpenseCents: privateExpenseCents,
       sharedVariableCents: sharedVariableCents,
       leftoverCents: incomeCents - fixed - nonMonthlyDue - savingsCents - privateExpenseCents - sharedVariableCents

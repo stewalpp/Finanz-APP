@@ -83,9 +83,7 @@
     content.appendChild(hello);
 
     var intro = App.el('p', '',
-      'Schön, dass ihr da seid! Mit „Unsere Finanzen“ habt ihr eure ' +
-      'gemeinsamen Finanzen immer im Blick, erkennt eure Sparpotenziale – ' +
-      'und baut Schritt für Schritt euer gemeinsames Vermögen auf. Wie heißt ihr?');
+      'Richte kurz eure Namen ein. Danach könnt ihr gemeinsame und private Kosten sauber trennen.');
     intro.style.color = 'var(--text-2)';
     intro.style.marginBottom = '16px';
     content.appendChild(intro);
@@ -126,11 +124,11 @@
         ]
       });
       App.closeSheet();
-      App.toast('Willkommen bei „Unsere Finanzen“ ✓');
+      App.toast('Namen gespeichert ✓');
     });
     content.appendChild(startBtn);
 
-    App.showSheet({ title: 'Willkommen!', content: content });
+    App.showSheet({ title: 'Einrichtung', content: content });
   }
 
   /* ---------------- wiring ---------------- */

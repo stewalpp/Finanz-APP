@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (siebter Wurf)
+
+- **Fixkosten transparenter getrennt.** Gemeinsame monatliche Fixkosten zählen jetzt nur noch
+  aus Regeln mit Zuordnung „Gemeinsam"; private laufende Kosten werden separat ausgewiesen
+  und trotzdem vom frei verfügbaren Budget abgezogen. Übersicht und Persönlich zeigen eigene
+  Zeilen/Sektionen für gemeinsame Fixkosten, private laufende Kosten, zusätzlich fällige
+  Quartals-/Jahresposten und gebuchte variable Ausgaben.
+- **Willkommensbanner entfernt, Analyse vereinfacht.** Die Übersicht startet direkt in der
+  eigentlichen Finanzansicht; das Einrichtungssheet ist neutral benannt. Die Analyse zeigt
+  nur noch einen Verlauf „Gespart oder verloren" pro Monat.
+  SW-Cache `v21`.
+
 ## 2026-06-11 (sechster Wurf)
 
 - **Erklär-Overlays radikal gekürzt.** Jedes (i)-Sheet zeigt jetzt: die Zahlen-Zeilen
