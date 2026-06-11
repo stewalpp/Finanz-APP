@@ -112,36 +112,97 @@
 
   // ------------------------------------------------------------------ list
 
-  // Only SHARED transactions (the joint ledger). 'ausgleich' has shared:false → excluded.
-  function getFiltered() {
+  // Monthly ledger: real transactions plus due recurring rules that are not booked yet.
+  function ruleDueDate(rule) {
+    var day = Math.min(28, Math.max(1, parseInt(rule.dueDay, 10) || 1));
+    return state.month + '-' + String(day).padStart(2, '0');
+  }
+
+  function entryDate(entry) {
+    return entry.kind === 'rule' ? entry.item.dueDateISO : entry.item.date;
+  }
+
+  function entryCreatedAt(entry) {
+    return entry.kind === 'tx' ? (entry.item.createdAt || '') : '';
+  }
+
+  function getLedgerEntries() {
     var q = state.search.trim().toLowerCase();
-    return Store.getTransactions().filter(function (tx) {
-      if (tx.shared !== true) return false;
-      if (App.monthKey(tx.date) !== state.month) return false;
+    var txs = Store.getTransactions();
+    var rules = Store.getRecurring();
+    var entries = [];
+
+    txs.forEach(function (tx) {
+      if (tx.category === 'ausgleich') return;
+      if (App.monthKey(tx.date) !== state.month) return;
       if (q) {
         var cat = App.cat(tx.category);
-        var hay = ((tx.note || '') + ' ' + cat.label + ' ' + App.memberName(tx.payerId)).toLowerCase();
-        if (hay.indexOf(q) === -1) return false;
+        var txHay = [
+          tx.note || '',
+          cat.label,
+          App.memberName(tx.payerId),
+          tx.shared === true ? 'gemeinsam geteilt' : 'privat',
+          tx.type === 'income' ? 'einnahme' : 'ausgabe'
+        ].join(' ').toLowerCase();
+        if (txHay.indexOf(q) === -1) return;
       }
-      return true;
+      entries.push({ kind: 'tx', item: tx });
     });
+
+    Analysis.upcomingForMonth(rules, txs, state.month, App.todayISO()).forEach(function (item) {
+      if (item.status === 'paid') return;
+      var rule = item.rule;
+      if (q) {
+        var cat = App.cat(rule.category);
+        var ruleHay = [
+          rule.name || '',
+          cat.label,
+          App.memberName(rule.payerId),
+          rule.shared === true ? 'gemeinsam geteilt' : 'privat',
+          rule.type === 'income' ? 'einnahme' : 'fixkosten ausgabe',
+          item.status === 'overdue' ? 'ueberfaellig uberfaellig' : 'faellig faelligkeit'
+        ].join(' ').toLowerCase();
+        if (ruleHay.indexOf(q) === -1) return;
+      }
+      entries.push({ kind: 'rule', item: item });
+    });
+
+    entries.sort(function (a, b) {
+      var ad = entryDate(a);
+      var bd = entryDate(b);
+      if (ad !== bd) return ad < bd ? 1 : -1;
+      var ac = entryCreatedAt(a);
+      var bc = entryCreatedAt(b);
+      if (ac !== bc) return ac < bc ? 1 : -1;
+      if (a.kind !== b.kind) return a.kind === 'rule' ? -1 : 1;
+      return 0;
+    });
+
+    return entries;
   }
 
   // Live total card — always visible, recomputed on every render/search/data change.
-  function buildTotalCard(txs) {
-    var expenseSum = txs.reduce(function (sum, tx) {
-      return tx.type === 'expense' ? sum + tx.amountCents : sum;
+  function buildTotalCard(entries) {
+    var expenseSum = entries.reduce(function (sum, entry) {
+      var item = entry.kind === 'rule' ? entry.item.rule : entry.item;
+      return item.type === 'expense' ? sum + item.amountCents : sum;
     }, 0);
-    var incomeSum = txs.reduce(function (sum, tx) {
-      return tx.type === 'income' ? sum + tx.amountCents : sum;
+    var incomeSum = entries.reduce(function (sum, entry) {
+      var item = entry.kind === 'rule' ? entry.item.rule : entry.item;
+      return item.type === 'income' ? sum + item.amountCents : sum;
     }, 0);
+    var plannedCount = entries.filter(function (entry) {
+      return entry.kind === 'rule';
+    }).length;
 
     var card = App.el('div', 'card hero-card');
     card.appendChild(App.el('div', 'card-title', 'Gemeinsame Ausgaben · ' + App.fmtMonth(state.month)));
+    card.firstChild.textContent = 'Ausgaben & Fixkosten \u00b7 ' + App.fmtMonth(state.month);
     var big = App.el('div', 'hero-amount', App.fmtEUR(expenseSum));
     card.appendChild(big);
-    var n = txs.length;
-    var subText = (n === 1 ? '1 gemeinsame Buchung' : n + ' gemeinsame Buchungen');
+    var n = entries.length;
+    var subText = (n === 1 ? '1 Eintrag' : n + ' Eintr\u00e4ge');
+    if (plannedCount > 0) subText += ' \u00b7 ' + plannedCount + ' f\u00e4llig';
     if (incomeSum > 0) subText += ' · Einnahmen ' + App.fmtEUR(incomeSum);
     var sub = App.el('div', 'hero-sub', subText);
     card.appendChild(sub);
@@ -150,12 +211,12 @@
 
   function renderList(wrap) {
     wrap.innerHTML = '';
-    var txs = getFiltered();
+    var entries = getLedgerEntries();
 
     // live total always on top
-    wrap.appendChild(buildTotalCard(txs));
+    wrap.appendChild(buildTotalCard(entries));
 
-    if (!txs.length) {
+    if (!entries.length) {
       var hasSearch = state.search.trim() !== '';
       var empty = App.el('div', 'empty-state');
       var em = App.el('span', '', '🧾');
@@ -169,21 +230,27 @@
       return;
     }
 
-    // group by date (transactions arrive sorted date DESC)
+    // group by date (entries are sorted date DESC)
     var groups = [];
     var current = null;
-    txs.forEach(function (tx) {
-      if (!current || current.date !== tx.date) {
-        current = { date: tx.date, items: [] };
+    entries.forEach(function (entry) {
+      var date = entryDate(entry);
+      if (!current || current.date !== date) {
+        current = { date: date, items: [] };
         groups.push(current);
       }
-      current.items.push(tx);
+      current.items.push(entry);
     });
 
     groups.forEach(function (g) {
       wrap.appendChild(App.el('div', 'section-title', App.fmtDateShort(g.date)));
       var listGroup = App.el('div', 'list-group');
-      g.items.forEach(function (tx) {
+      g.items.forEach(function (entry) {
+        if (entry.kind === 'rule') {
+          listGroup.appendChild(buildRuleEntryRow(entry.item));
+          return;
+        }
+        var tx = entry.item;
         listGroup.appendChild(makeSwipeable(
           buildTxRow(tx),
           function () { openEditor(tx); },
@@ -195,6 +262,26 @@
       });
       wrap.appendChild(listGroup);
     });
+  }
+
+  function bookRule(item) {
+    var rule = item.rule;
+    Store.addTransaction({
+      type: rule.type,
+      amountCents: rule.amountCents,
+      category: rule.category,
+      note: rule.name,
+      date: item.dueDateISO || ruleDueDate(rule),
+      payerId: rule.payerId,
+      shared: rule.shared,
+      recurringId: rule.id
+    });
+    App.toast('Eintrag gebucht');
+  }
+
+  function statusBadge(status) {
+    if (status === 'overdue') return App.el('span', 'badge badge-red', '\u00dcberf\u00e4llig');
+    return App.el('span', 'badge badge-orange', 'F\u00e4llig');
   }
 
   function buildTxRow(tx) {
@@ -224,7 +311,10 @@
     dot.style.width = '7px';
     dot.style.height = '7px';
     sub.appendChild(dot);
-    sub.appendChild(document.createTextNode(cat.label + ' · ' + (App.memberName(tx.payerId) || '–')));
+    sub.appendChild(document.createTextNode(
+      cat.label + ' · ' + (App.memberName(tx.payerId) || '–') +
+      ' · ' + (tx.shared === true ? 'Gemeinsam' : 'Privat')
+    ));
     main.appendChild(sub);
 
     var trailing = App.el('div', 'row-trailing');
@@ -234,6 +324,60 @@
     row.appendChild(icon);
     row.appendChild(main);
     row.appendChild(trailing);
+    return row;
+  }
+
+  function buildRuleEntryRow(item) {
+    var rule = item.rule;
+    var cat = App.cat(rule.category);
+    var isIncome = rule.type === 'income';
+    var row = App.el('div', 'list-row');
+    row.setAttribute('role', 'button');
+    row.style.boxShadow = 'inset 4px 0 0 0 var(--orange)';
+    row.style.background = 'color-mix(in srgb, var(--orange) 8%, var(--bg-card))';
+
+    var icon = App.el('div', 'cat-icon', cat.emoji);
+    icon.style.background = cat.color + '2E';
+
+    var main = App.el('div', 'row-main');
+    main.appendChild(App.el('div', 'row-title', rule.name || cat.label));
+
+    var sub = App.el('div', 'row-sub');
+    sub.style.display = 'flex';
+    sub.style.alignItems = 'center';
+    sub.style.gap = '6px';
+    var dot = App.el('span', 'dot');
+    dot.style.background = memberColor(rule.payerId);
+    dot.style.width = '7px';
+    dot.style.height = '7px';
+    sub.appendChild(dot);
+    sub.appendChild(document.createTextNode(
+      (isIncome ? 'Wiederkehrend' : 'Fixkosten') +
+      ' \u00b7 ' + cat.label + ' \u00b7 ' + (App.memberName(rule.payerId) || '-') +
+      ' \u00b7 ' + (rule.shared === true ? 'Gemeinsam' : 'Privat')
+    ));
+    main.appendChild(sub);
+
+    var trailing = App.el('div', 'row-trailing');
+    trailing.appendChild(App.el('span', isIncome ? 'amount-pos' : 'amount-neg',
+      (isIncome ? '+' : '\u2212') + App.fmtEUR(rule.amountCents)));
+    trailing.appendChild(statusBadge(item.status));
+
+    var btn = App.el('button', 'btn btn-secondary btn-small', 'Buchen');
+    btn.type = 'button';
+    btn.style.marginLeft = '10px';
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      bookRule(item);
+    });
+
+    row.appendChild(icon);
+    row.appendChild(main);
+    row.appendChild(trailing);
+    row.appendChild(btn);
+    row.addEventListener('click', function () {
+      if (Views.recurring && Views.recurring.openEditor) Views.recurring.openEditor(rule);
+    });
     return row;
   }
 

@@ -1494,3 +1494,349 @@ textarea.input {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/* --------------------------------------------------------------------------
+   25. Apple Liquid Glass refresh
+   -------------------------------------------------------------------------- */
+
+:root {
+  --bg:
+    radial-gradient(circle at 12% 0%, rgba(0, 122, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 92% 10%, rgba(255, 45, 85, 0.13), transparent 30%),
+    linear-gradient(180deg, #F8FAFF 0%, #EEF3F9 45%, #F3F2F7 100%);
+  --bg-card: rgba(255, 255, 255, 0.62);
+  --bg-input: rgba(255, 255, 255, 0.42);
+  --bar-bg: rgba(255, 255, 255, 0.54);
+  --segment-bg: rgba(255, 255, 255, 0.78);
+  --glass-edge: rgba(255, 255, 255, 0.82);
+  --glass-edge-2: rgba(60, 60, 67, 0.1);
+  --glass-glow: rgba(0, 122, 255, 0.16);
+  --shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 14px 38px rgba(31, 47, 75, 0.12),
+    0 4px 12px rgba(31, 47, 75, 0.07);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:
+      radial-gradient(circle at 12% 0%, rgba(10, 132, 255, 0.28), transparent 34%),
+      radial-gradient(circle at 88% 12%, rgba(191, 90, 242, 0.18), transparent 31%),
+      linear-gradient(180deg, #080A10 0%, #10131B 52%, #050507 100%);
+    --bg-card: rgba(30, 32, 39, 0.58);
+    --bg-input: rgba(255, 255, 255, 0.1);
+    --bar-bg: rgba(24, 26, 33, 0.56);
+    --segment-bg: rgba(255, 255, 255, 0.16);
+    --glass-edge: rgba(255, 255, 255, 0.16);
+    --glass-edge-2: rgba(255, 255, 255, 0.08);
+    --glass-glow: rgba(10, 132, 255, 0.24);
+    --shadow-card:
+      0 1px 0 rgba(255, 255, 255, 0.1) inset,
+      0 18px 44px rgba(0, 0, 0, 0.36),
+      0 5px 18px rgba(0, 0, 0, 0.24);
+  }
+}
+
+html.theme-light {
+  --bg:
+    radial-gradient(circle at 12% 0%, rgba(0, 122, 255, 0.18), transparent 34%),
+    radial-gradient(circle at 92% 10%, rgba(255, 45, 85, 0.13), transparent 30%),
+    linear-gradient(180deg, #F8FAFF 0%, #EEF3F9 45%, #F3F2F7 100%);
+  --bg-card: rgba(255, 255, 255, 0.62);
+  --bg-input: rgba(255, 255, 255, 0.42);
+  --bar-bg: rgba(255, 255, 255, 0.54);
+  --segment-bg: rgba(255, 255, 255, 0.78);
+  --glass-edge: rgba(255, 255, 255, 0.82);
+  --glass-edge-2: rgba(60, 60, 67, 0.1);
+  --glass-glow: rgba(0, 122, 255, 0.16);
+  --shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 14px 38px rgba(31, 47, 75, 0.12),
+    0 4px 12px rgba(31, 47, 75, 0.07);
+}
+
+html.theme-dark {
+  --bg:
+    radial-gradient(circle at 12% 0%, rgba(10, 132, 255, 0.28), transparent 34%),
+    radial-gradient(circle at 88% 12%, rgba(191, 90, 242, 0.18), transparent 31%),
+    linear-gradient(180deg, #080A10 0%, #10131B 52%, #050507 100%);
+  --bg-card: rgba(30, 32, 39, 0.58);
+  --bg-input: rgba(255, 255, 255, 0.1);
+  --bar-bg: rgba(24, 26, 33, 0.56);
+  --segment-bg: rgba(255, 255, 255, 0.16);
+  --glass-edge: rgba(255, 255, 255, 0.16);
+  --glass-edge-2: rgba(255, 255, 255, 0.08);
+  --glass-glow: rgba(10, 132, 255, 0.24);
+  --shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.1) inset,
+    0 18px 44px rgba(0, 0, 0, 0.36),
+    0 5px 18px rgba(0, 0, 0, 0.24);
+}
+
+html,
+body {
+  background: var(--bg);
+  background-attachment: fixed;
+}
+
+body {
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.38), transparent 30%, rgba(255, 255, 255, 0.18) 64%, transparent 82%);
+  opacity: 0.76;
+}
+
+@media (prefers-color-scheme: dark) {
+  body::before {
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 28%, rgba(10, 132, 255, 0.08) 66%, transparent 84%);
+    opacity: 0.92;
+  }
+}
+
+html.theme-dark body::before {
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 28%, rgba(10, 132, 255, 0.08) 66%, transparent 84%);
+  opacity: 0.92;
+}
+
+.app-header {
+  background: linear-gradient(180deg, var(--bar-bg), color-mix(in srgb, var(--bar-bg) 74%, transparent));
+  border-bottom: 0.5px solid var(--glass-edge-2);
+}
+
+.header-inner {
+  padding: 14px 18px 10px;
+}
+
+.large-title {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.36);
+}
+
+.card,
+.list-group,
+.stat,
+.tip-card,
+.suggestion-card {
+  position: relative;
+  overflow: hidden;
+  border: 0.5px solid var(--glass-edge-2);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-edge) 38%, transparent), transparent 34%),
+    var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+
+.card::before,
+.list-group::before,
+.stat::before,
+.tip-card::before,
+.suggestion-card::before,
+.sheet::before,
+.alert::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 34%),
+    radial-gradient(circle at 12% 0%, var(--glass-glow), transparent 42%);
+  opacity: 0.62;
+}
+
+@supports ((-webkit-backdrop-filter: blur(28px)) or (backdrop-filter: blur(28px))) {
+  .app-header,
+  .tab-bar,
+  .card,
+  .list-group,
+  .stat,
+  .tip-card,
+  .suggestion-card,
+  .sheet,
+  .alert,
+  .toast {
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    backdrop-filter: blur(28px) saturate(190%);
+  }
+}
+
+.card,
+.tip-card,
+.suggestion-card {
+  border-radius: 24px;
+}
+
+.list-group {
+  border-radius: 22px;
+}
+
+.list-row,
+.swipe-cell > .list-row {
+  background: transparent;
+}
+
+.list-row + .list-row,
+.swipe-cell + .swipe-cell {
+  border-top-color: color-mix(in srgb, var(--sep) 72%, transparent);
+}
+
+.cat-icon,
+.icon-btn,
+.month-nav-btn,
+.sheet-close {
+  border: 0.5px solid var(--glass-edge-2);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-edge) 34%, transparent), transparent 52%),
+    var(--bg-input);
+  box-shadow: 0 5px 16px rgba(31, 47, 75, 0.1);
+}
+
+.btn,
+.chip,
+.cat-chip,
+.segmented,
+.input,
+.searchbar,
+.switch-track {
+  border: 0.5px solid var(--glass-edge-2);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-edge) 28%, transparent), transparent 48%),
+    var(--bg-input);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.24) inset;
+}
+
+.btn-primary,
+.chip.active {
+  border: 0;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, #FFFFFF 28%, transparent), transparent 44%),
+    linear-gradient(135deg, var(--tint), color-mix(in srgb, var(--tint) 72%, var(--teal)));
+  box-shadow:
+    0 12px 26px color-mix(in srgb, var(--tint) 26%, transparent),
+    0 1px 0 rgba(255, 255, 255, 0.36) inset;
+}
+
+.btn-secondary,
+.btn-destructive {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-edge) 34%, transparent), transparent 48%),
+    color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.segment.active {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, #FFFFFF 42%, transparent), transparent 50%),
+    var(--segment-bg);
+  box-shadow:
+    0 9px 18px rgba(31, 47, 75, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.36) inset;
+}
+
+.tab-bar {
+  left: 12px;
+  right: 12px;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  border: 0.5px solid var(--glass-edge-2);
+  border-radius: 28px;
+  padding: 5px 7px max(5px, env(safe-area-inset-bottom));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-edge) 30%, transparent), transparent 48%),
+    var(--bar-bg);
+  box-shadow:
+    0 18px 50px rgba(31, 47, 75, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.28) inset;
+}
+
+.tab-item {
+  border-radius: 21px;
+  min-height: 52px;
+  transition: color 0.18s ease, background-color 0.18s ease, transform 0.15s cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+
+.tab-item.active {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-edge) 36%, transparent), transparent 54%),
+    color-mix(in srgb, var(--tint) 13%, transparent);
+}
+
+.tab-item:active {
+  transform: scale(0.94);
+}
+
+.fab {
+  right: max(20px, calc(50% - 300px));
+  bottom: calc(112px + env(safe-area-inset-bottom));
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.34), transparent 45%),
+    linear-gradient(135deg, var(--tint), color-mix(in srgb, var(--tint) 70%, var(--teal)));
+  box-shadow:
+    0 18px 42px color-mix(in srgb, var(--tint) 34%, transparent),
+    0 1px 0 rgba(255, 255, 255, 0.44) inset;
+}
+
+.hero-card {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-edge) 42%, transparent), transparent 36%),
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--tint) 24%, transparent), transparent 52%),
+    radial-gradient(circle at 96% 8%, color-mix(in srgb, var(--pink) 14%, transparent), transparent 42%),
+    var(--bg-card);
+  border-color: color-mix(in srgb, var(--tint) 22%, var(--glass-edge-2));
+}
+
+.progress {
+  background: color-mix(in srgb, var(--bg-input) 72%, transparent);
+  border: 0.5px solid var(--glass-edge-2);
+}
+
+.progress-fill {
+  background:
+    linear-gradient(90deg, var(--green), color-mix(in srgb, var(--green) 62%, var(--teal)));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--green) 36%, transparent);
+}
+
+.sheet {
+  border: 0.5px solid var(--glass-edge-2);
+  border-bottom: 0;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-edge) 34%, transparent), transparent 42%),
+    var(--bg-card);
+  box-shadow: 0 -22px 60px rgba(0, 0, 0, 0.22);
+}
+
+.alert {
+  position: relative;
+  border: 0.5px solid var(--glass-edge-2);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-edge) 34%, transparent), transparent 42%),
+    var(--bg-card);
+}
+
+.toast {
+  background: rgba(37, 39, 46, 0.72);
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 420px) {
+  .tab-bar {
+    left: 8px;
+    right: 8px;
+  }
+
+  .tab-item span {
+    font-size: 9px;
+  }
+
+  .fab {
+    bottom: calc(108px + env(safe-area-inset-bottom));
+  }
+}
