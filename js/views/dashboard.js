@@ -348,6 +348,30 @@
     return card;
   }
 
+  function expenseCategorySummary(txs, monthKey) {
+    const catMap = new Map();
+    let expenseCents = 0;
+    (txs || []).forEach(function (tx) {
+      if (!tx || tx.type !== 'expense' || tx.category === 'ausgleich' ||
+          App.monthKey(tx.date) !== monthKey) return;
+      const amount = Number(tx.amountCents) || 0;
+      expenseCents += amount;
+      let entry = catMap.get(tx.category);
+      if (!entry) {
+        entry = { category: tx.category, cents: 0, count: 0 };
+        catMap.set(tx.category, entry);
+      }
+      entry.cents += amount;
+      entry.count += 1;
+    });
+    return {
+      expenseCents: expenseCents,
+      byCategory: Array.from(catMap.values()).sort(function (a, b) {
+        return b.cents - a.cents;
+      })
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // 3. Upcoming fixed costs
   // ---------------------------------------------------------------------------
@@ -548,6 +572,17 @@
     return card;
   }
 
+  function buildExpenseCategoryCard(txs) {
+    const card = App.el('div', 'card');
+    card.appendChild(App.el('div', 'card-title', 'Ausgaben nach Kategorie'));
+
+    const summary = expenseCategorySummary(txs, selectedMonth);
+    if (!appendDonut(card, summary, 'Ausgaben')) {
+      card.appendChild(emptyState('🪙', 'Keine Ausgaben in diesem Monat.'));
+    }
+    return card;
+  }
+
   // ---------------------------------------------------------------------------
   // 6. Recent transactions of the month
   // ---------------------------------------------------------------------------
@@ -666,12 +701,7 @@
     view.appendChild(buildMonthNav());
     view.appendChild(buildBudgetCard(budget));       // hero: combined + per-person
     view.appendChild(buildPersonMonthCard(txs, rules));
-    var suggestionsCard = buildSuggestionsCard(txs, rules);
-    if (suggestionsCard) view.appendChild(suggestionsCard);
-    view.appendChild(buildSharedCategoryCard(txs));
-    view.appendChild(buildPersonCategoryCard(txs));
-    if (rules.length) view.appendChild(buildUpcomingCard(rules, txs));
-    view.appendChild(buildRecentCard(txs));
+    view.appendChild(buildExpenseCategoryCard(txs));
 
     root.appendChild(view);
   }

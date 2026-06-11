@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-11 (elfter Wurf)
+
+- **Dashboard auf drei Bereiche reduziert.** Die Übersicht zeigt nur noch „Zusammen frei
+  verfügbar", „Monat nach Person" und ein einzelnes Kreisdiagramm „Ausgaben nach Kategorie".
+  Vorschläge, anstehende Kosten, letzte Buchungen und die separaten gemeinsamen/personenbezogenen
+  Diagramme wurden aus dem Dashboard entfernt.
+  SW-Cache `v25`.
+
 ## 2026-06-11 (zehnter Wurf)
 
 - **Analyse-Tab entfernt.** Die App-Navigation besteht vorerst aus Übersicht,
