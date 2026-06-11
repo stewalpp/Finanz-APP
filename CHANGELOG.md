@@ -6,6 +6,15 @@ Versionsmarker für installierte PWAs.)
 
 ## 2026-06-11
 
+- **Fixkosten-Tab entfernt (zusammengeführt) → 5 Tabs.** Wiederkehrende Kosten verwaltet man jetzt
+  pro Person im Tab „Persönlich"; die automatische Erkennung wiederkehrender Kosten wandert als Karte
+  ins Dashboard; der Kalender-Export liegt weiterhin unter „Mehr". Tabs jetzt: Übersicht · Persönlich ·
+  Buchungen · Analyse · Mehr. (`index.html`, `dashboard.js`)
+- **Buchungen: Ausgaben rot (Minus-Logik).** Ausgabe-Kacheln haben roten linken Rand + zarte rote
+  Tönung + roten Betrag; Einnahmen analog grün. Personen-Farbpunkt zeigt weiterhin, wer gebucht hat.
+  Expense-Beträge sind app-weit rot. (`transactions.js`, `style.css`)
+- **Neues, hochwertigeres App-Icon** (Apple-Stil: Verlauf, Highlight, dezente Paar-Scheiben,
+  € mit Tiefenschatten). (`icons/*`; SW-Cache `v12`)
 - **Bottom-Sheet: Runterwischen zum Schließen + animiertes Schließen.** Sheets lassen sich am
   Griff/Header nach unten wischen (Snap-back bei kurzem Zug), Backdrop-Tap und ✕ schließen jetzt
   ebenfalls mit Slide-down-Animation. (`core.js`, `style.css`)

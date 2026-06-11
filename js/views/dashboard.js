@@ -374,9 +374,9 @@
       });
     }
 
-    const link = App.el('div', 'link-row', 'Alle Fixkosten →');
+    const link = App.el('div', 'link-row', 'Fixkosten verwalten →');
     link.setAttribute('role', 'button');
-    link.addEventListener('click', function () { App.switchTab('recurring'); });
+    link.addEventListener('click', function () { App.switchTab('personal'); });
     card.appendChild(link);
     return card;
   }
@@ -534,6 +534,52 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Detected recurring costs (moved here from the former Fixkosten tab)
+  // ---------------------------------------------------------------------------
+  const INTERVAL_WORDS = { monthly: 'monatlich', quarterly: 'vierteljährlich', yearly: 'jährlich' };
+
+  function buildSuggestionsCard(txs, rules) {
+    const suggestions = Analysis.detectRecurring(txs, rules, Store.getDismissed());
+    if (!suggestions.length) return null;
+
+    const card = App.el('div', 'card');
+    card.appendChild(App.el('div', 'card-title', 'Wiederkehrende Kosten erkannt'));
+
+    suggestions.slice(0, 3).forEach(function (s) {
+      const item = App.el('div', 'suggestion-card');
+      const title = App.el('div', '', '🔍 ' + s.name);
+      title.style.fontWeight = '600';
+      item.appendChild(title);
+      item.appendChild(App.el('div', 'row-sub',
+        App.fmtEUR(s.amountCents) + ' ' + (INTERVAL_WORDS[s.interval] || s.interval) + ' (' + s.count + '×)'));
+
+      const row = App.el('div', 'form-row');
+      row.style.marginTop = '10px';
+      const accept = App.el('button', 'btn btn-primary btn-small', 'Übernehmen');
+      accept.type = 'button';
+      accept.addEventListener('click', function () {
+        Store.addRecurring({
+          name: s.name, type: 'expense', amountCents: s.amountCents, category: s.category,
+          interval: s.interval,
+          dueDay: s.dueDay,
+          dueMonth: s.interval === 'yearly' ? (parseInt(String(s.lastDate).slice(5, 7), 10) || 1) : 1,
+          anchorMonth: App.monthKey(s.lastDate), payerId: 'p1', shared: false, active: true, source: 'detected'
+        });
+        Store.dismissSuggestion(s.key);
+        App.toast('Als Fixkosten übernommen ✓');
+      });
+      const ignore = App.el('button', 'btn btn-secondary btn-small', 'Ignorieren');
+      ignore.type = 'button';
+      ignore.addEventListener('click', function () { Store.dismissSuggestion(s.key); });
+      row.appendChild(accept);
+      row.appendChild(ignore);
+      item.appendChild(row);
+      card.appendChild(item);
+    });
+    return card;
+  }
+
+  // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
   function render(root) {
@@ -555,6 +601,8 @@
     view.appendChild(buildMonthNav());
     view.appendChild(buildBudgetCard(txs, rules));   // hero: combined + per-person
     view.appendChild(buildStatGrid(summary));
+    var suggestionsCard = buildSuggestionsCard(txs, rules);
+    if (suggestionsCard) view.appendChild(suggestionsCard);
     view.appendChild(buildCategoryCard(summary));
     view.appendChild(buildBalanceCard(txs));
     if (rules.length) view.appendChild(buildUpcomingCard(rules, txs));

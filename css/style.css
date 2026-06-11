@@ -503,7 +503,7 @@ button {
 }
 
 .amount-neg {
-  color: var(--text);
+  color: var(--red);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

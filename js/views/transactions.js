@@ -199,24 +199,37 @@
 
   function buildTxRow(tx) {
     var cat = App.cat(tx.category);
+    var isIncome = tx.type === 'income';
     var row = App.el('div', 'list-row');
     row.setAttribute('role', 'button');
-    // coloured left edge in the payer's colour → who booked it is scannable at a glance
-    row.style.boxShadow = 'inset 4px 0 0 0 ' + memberColor(tx.payerId);
+    // coloured left edge by direction: red = Ausgabe (Minus), grün = Einnahme (Plus)
+    row.style.boxShadow = 'inset 4px 0 0 0 ' + (isIncome ? 'var(--green)' : 'var(--red)');
+    // faint matching tint so the tile reads as money-out / money-in at a glance
+    row.style.background = isIncome
+      ? 'color-mix(in srgb, var(--green) 7%, var(--bg-card))'
+      : 'color-mix(in srgb, var(--red) 7%, var(--bg-card))';
 
     var icon = App.el('div', 'cat-icon', cat.emoji);
     icon.style.background = cat.color + '2E';
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', tx.note || cat.label));
-    main.appendChild(App.el('div', 'row-sub', cat.label + ' · ' + (App.memberName(tx.payerId) || '–')));
+    // who booked it → small dot in the payer's colour + name
+    var sub = App.el('div', 'row-sub');
+    sub.style.display = 'flex';
+    sub.style.alignItems = 'center';
+    sub.style.gap = '6px';
+    var dot = App.el('span', 'dot');
+    dot.style.background = memberColor(tx.payerId);
+    dot.style.width = '7px';
+    dot.style.height = '7px';
+    sub.appendChild(dot);
+    sub.appendChild(document.createTextNode(cat.label + ' · ' + (App.memberName(tx.payerId) || '–')));
+    main.appendChild(sub);
 
     var trailing = App.el('div', 'row-trailing');
-    if (tx.type === 'income') {
-      trailing.appendChild(App.el('span', 'amount-pos', '+' + App.fmtEUR(tx.amountCents)));
-    } else {
-      trailing.appendChild(App.el('span', 'amount-neg', '−' + App.fmtEUR(tx.amountCents)));
-    }
+    trailing.appendChild(App.el('span', isIncome ? 'amount-pos' : 'amount-neg',
+      (isIncome ? '+' : '−') + App.fmtEUR(tx.amountCents)));
 
     row.appendChild(icon);
     row.appendChild(main);

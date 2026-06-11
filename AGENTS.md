@@ -65,8 +65,11 @@ js/store.js           window.Store: zentrale Datenhaltung. Dual-Modus lokal (loc
 js/views/dashboard.js     Views.dashboard   — „Übersicht"
 js/views/transactions.js  Views.transactions — „Buchungen": NUR gemeinsame (shared) Buchungen,
                       Live-Summe oben, Swipe-to-Delete (+ openEditor)
-js/views/recurring.js     Views.recurring   — „Fixkosten" (+ openEditor)
-js/views/personal.js      Views.personal    — „Persönlich" (pro Person, mit Steffen/Lisa-Umschalter)
+js/views/recurring.js     Views.recurring   — Regel-Editor openEditor(rule, {type,payerId}) +
+                      Erkennungs-Logik. KEIN eigener Tab mehr (zusammengeführt); openEditor wird
+                      von Persönlich + Dashboard genutzt.
+js/views/personal.js      Views.personal    — „Persönlich" (pro Person, mit Steffen/Lisa-Umschalter);
+                      hier werden wiederkehrende Ein-/Ausgaben angelegt/verwaltet
 js/views/insights.js      Views.insights    — „Analyse"
 js/views/settings.js      Views.settings    — „Mehr"/Einstellungen
 js/app.js             Boot-Datei (ZULETZT geladen): App.switchTab/rerender, Tab-Bar/FAB-Verdrahtung,
@@ -158,8 +161,12 @@ Diagrammen und Tipps **ausgenommen** — nur `Analysis.coupleBalance` nutzt sie.
 ## 10. Funktionsstand & Erweiterungen seit SPEC.md
 
 Über die ursprüngliche `SPEC.md` hinaus bereits umgesetzt (siehe `CHANGELOG.md`):
+- **5 Tabs:** Übersicht · Persönlich · Buchungen · Analyse · Mehr (Übersicht + Persönlich sind das
+  Herzstück, zuerst). Der frühere Fixkosten-Tab wurde entfernt: Regeln verwaltet man in „Persönlich",
+  Erkennung + fällige Fixkosten zeigt das Dashboard, ICS-Export liegt in „Mehr".
 - **Buchungen zeigt nur gemeinsame (shared) Buchungen** mit Live-Summe; privat lebt unter „Persönlich".
   Privat/Gemeinsam ist die zentrale Achse: gemeinsam → Buchungen + Paar-Bilanz, privat → Persönlich.
+  Ausgaben werden rot dargestellt (Minus), Einnahmen grün.
 - Tab **„Persönlich"** (`personal.js`) mit Steffen/Lisa-Umschalter: Gehalt, eigene Fixkosten,
   private Ausgaben pro Person; `Analysis.personalSummary()`. Tab-Leiste = 6 Tabs.
 - Neue Kategorie **„Kredite"** (`kredite`).
