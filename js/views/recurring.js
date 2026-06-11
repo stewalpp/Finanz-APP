@@ -302,16 +302,16 @@
 
     // --- amount ---
     var amountGroup = App.el('div', 'form-group');
+    amountGroup.appendChild(App.el('div', 'form-label', 'Betrag (€)'));
     var amountInput = document.createElement('input');
     amountInput.type = 'text';
-    amountInput.className = 'amount-input';
+    amountInput.className = 'input amount-field';
     amountInput.inputMode = 'decimal';
     amountInput.placeholder = '0,00';
     amountInput.autocomplete = 'off';
     amountInput.setAttribute('aria-label', 'Betrag in Euro');
     if (isEdit) amountInput.value = centsToInput(rule.amountCents);
     amountGroup.appendChild(amountInput);
-    content.appendChild(amountGroup);
 
     // --- type segmented ---
     var typeGroup = App.el('div', 'form-group');
@@ -503,6 +503,9 @@
     }
     updateSharedHint();
     content.appendChild(sharedGroup);
+
+    // Keep the amount beside the final payment options instead of above category choice.
+    content.appendChild(amountGroup);
 
     // --- save ---
     var saveBtn = App.el('button', 'btn btn-primary', 'Speichern');

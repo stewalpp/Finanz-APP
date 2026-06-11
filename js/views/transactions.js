@@ -525,7 +525,7 @@
     typeGroup.appendChild(segType);
     content.appendChild(typeGroup);
 
-    // --- amount (built here, appended lower down with the other fields) ---
+    // --- amount (built here, appended with the lower option fields) ---
     var amountGroup = App.el('div', 'form-group');
     amountGroup.appendChild(App.el('div', 'form-label', 'Betrag (€)'));
     var amountInput = document.createElement('input');
@@ -566,9 +566,6 @@
       });
     }
     buildCatGrid();
-
-    // amount sits here, grouped with the other fields
-    content.appendChild(amountGroup);
 
     // --- date ---
     var dateGroup = App.el('div', 'form-group');
@@ -630,6 +627,9 @@
     sharedHint.style.margin = '6px 0 0';
     sharedGroup.appendChild(sharedHint);
     content.appendChild(sharedGroup);
+
+    // Keep money entry together with the concrete booking options.
+    content.appendChild(amountGroup);
 
     // keeps the helper text in sync when the type toggles (purely cosmetic)
     function updateSharedLabel() {
