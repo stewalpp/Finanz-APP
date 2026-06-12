@@ -1295,6 +1295,68 @@ textarea.input {
   min-width: 0;
 }
 
+.collapsible-section-header {
+  width: calc(100% + 8px);
+  min-height: 44px;
+  margin: -4px -4px 0;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.collapsible-section:not(.collapsed) .collapsible-section-header {
+  margin-bottom: 10px;
+}
+
+.collapsible-section-header .card-title {
+  margin: 0;
+}
+
+.collapsible-section-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  color: var(--text-3);
+  background: color-mix(in srgb, var(--text-3) 10%, transparent);
+  transition: transform 0.2s var(--ease-out), background 0.15s var(--ease-out);
+}
+
+.collapsible-section:not(.collapsed) .collapsible-section-toggle {
+  transform: rotate(90deg);
+}
+
+.collapsible-section-header:active .collapsible-section-toggle {
+  background: color-mix(in srgb, var(--text-3) 18%, transparent);
+}
+
+.collapsible-section-summary {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: 13px;
+  min-width: 0;
+}
+
+.collapsible-section-summary > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .section-title {
   font-size: 13px;
   font-weight: 600;

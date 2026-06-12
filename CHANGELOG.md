@@ -4,6 +4,12 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (vierundzwanzigster Wurf)
+
+- **Persönlich-Karten einklappbar gemacht.** Die Detailkarten im Tab „Persönlich" lassen sich
+  jetzt optional reduzieren; eingeklappt bleiben nur Kartentitel, Anzahl der Einträge und Summe
+  sichtbar. SW-Cache `v39`.
+
 ## 2026-06-12 (dreiundzwanzigster Wurf)
 
 - **Sonderkosten im Persönlich-Bereich ergänzt.** Neue Kategorie „Sonderkosten" für TÜV/HU,
