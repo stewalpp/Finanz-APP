@@ -2083,6 +2083,10 @@ html.theme-dark body::before {
   border-radius: 24px;
 }
 
+.card.special-cost-section {
+  border: 1px solid color-mix(in srgb, var(--red) 32%, transparent);
+}
+
 .list-group {
   border-radius: 22px;
 }

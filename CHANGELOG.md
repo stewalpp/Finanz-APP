@@ -4,6 +4,11 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (fünfundzwanzigster Wurf)
+
+- **Sonderkosten optisch hervorgehoben.** Die Sonderkosten-Karte im Tab „Persönlich" hat jetzt
+  eine dezente rote Umrahmung. SW-Cache `v40`.
+
 ## 2026-06-12 (vierundzwanzigster Wurf)
 
 - **Persönlich-Karten einklappbar gemacht.** Die Detailkarten im Tab „Persönlich" lassen sich

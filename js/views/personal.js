@@ -370,6 +370,7 @@
   function sectionCard(key, title, rows, emptyText, addBtn, footer) {
     var collapsed = collapsedSections[key] === true;
     var card = App.el('div', 'card collapsible-section' + (collapsed ? ' collapsed' : ''));
+    if (key === 'special') card.classList.add('special-cost-section');
     var header = App.el('button', 'collapsible-section-header');
     header.type = 'button';
     header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
