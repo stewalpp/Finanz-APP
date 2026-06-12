@@ -84,11 +84,10 @@
 
   // --- small line for the summary card ---
   function summaryLine(label, cents, sign, tone) {
-    var row = App.el('div');
+    var row = App.el('div', 'personal-summary-line');
     row.style.display = 'flex';
     row.style.justifyContent = 'space-between';
     row.style.alignItems = 'baseline';
-    row.style.padding = '6px 0';
     var l = App.el('span', '', label);
     l.style.color = 'var(--text-2)';
     l.style.fontSize = '15px';

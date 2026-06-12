@@ -1163,6 +1163,11 @@ textarea.input {
   border-bottom: 0.5px solid var(--sep);
 }
 
+.personal-summary-line {
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--sep);
+}
+
 .personal-chart-donut .cf-donut {
   margin: 0 auto;
 }

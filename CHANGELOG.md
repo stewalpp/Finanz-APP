@@ -4,6 +4,12 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (neunzehnter Wurf)
+
+- **Überblick im Persönlich-Tab feiner gegliedert.** Die Kennzahlen unter dem persönlichen
+  Diagramm haben jetzt dieselben dünnen Trennlinien wie der Diagrammbereich.
+  SW-Cache `v33`.
+
 ## 2026-06-12 (achtzehnter Wurf)
 
 - **Swipe-Löschen Apple-typisch stabilisiert.** Nach links wischen öffnet rechts das rote
