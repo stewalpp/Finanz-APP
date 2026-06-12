@@ -4,6 +4,12 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (zwanzigster Wurf)
+
+- **Summen in allen Persönlich-Karten ergänzt.** Die sechs Detailkarten zeigen unten jetzt
+  jeweils Anzahl der Einträge und Summe, damit die Beträge schneller erfassbar sind.
+  SW-Cache `v35`.
+
 ## 2026-06-12 (neunzehnter Wurf)
 
 - **Überblick im Persönlich-Tab feiner gegliedert.** Die Kennzahlen unter dem persönlichen

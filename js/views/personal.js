@@ -308,7 +308,22 @@
     }, { ariaLabel: 'Regel löschen' });
   }
 
-  function sectionCard(title, rows, emptyText, addBtn) {
+  function sumAmounts(items) {
+    return (items || []).reduce(function (sum, item) {
+      return sum + (Number(item && item.amountCents) || 0);
+    }, 0);
+  }
+
+  function totalFooter(count, cents, tone, label) {
+    var footer = App.el('div', 'section-total');
+    var countLabel = count === 1 ? 'Eintrag' : 'Einträge';
+    footer.appendChild(App.el('span', '', count + ' ' + countLabel + ' · ' + (label || 'Summe')));
+    footer.appendChild(App.el('span', tone === 'pos' ? 'amount-pos' : tone === 'saving' ? 'amount-saving' : 'amount-neg',
+      App.fmtEUR(cents)));
+    return footer;
+  }
+
+  function sectionCard(title, rows, emptyText, addBtn, footer) {
     var card = App.el('div', 'card');
     card.appendChild(App.el('div', 'card-title', title));
     if (rows.length) {
@@ -320,6 +335,7 @@
       card.appendChild(emptyState(emptyText));
     }
     if (addBtn) card.appendChild(addBtn);
+    if (footer) card.appendChild(footer);
     return card;
   }
 
@@ -356,108 +372,97 @@
 
     // Gehalt & wiederkehrende Einnahmen — recurring income rules (auto every month,
     // shared ones count half for each partner) plus one-off income bookings this month
-    var incomeRuleRows = rules
+    var incomeRules = rules
       .filter(function (r) {
         return r.active && r.type === 'income' &&
           (r.payerId === selectedPerson || r.shared === true);
-      })
-      .map(ruleSwipeRow);
-    var oneOffIncomeRows = txs
+      });
+    var incomeRuleRows = incomeRules.map(ruleSwipeRow);
+    var oneOffIncomeTxs = txs
       .filter(function (t) {
         return t.payerId === selectedPerson && t.type === 'income' && !t.recurringId &&
           t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
-      })
-      .map(txSwipeRow);
+      });
+    var oneOffIncomeRows = oneOffIncomeTxs.map(txSwipeRow);
+    var incomeRows = incomeRuleRows.concat(oneOffIncomeRows);
     view.appendChild(sectionCard('Gehalt & wiederkehrende Einnahmen',
-      incomeRuleRows.concat(oneOffIncomeRows),
+      incomeRows,
       'Lege z. B. dein Gehalt als wiederkehrende Einnahme an – es erscheint dann jeden Monat automatisch.',
-      addRecurringBtn('+ Wiederkehrende Einnahme', 'income')));
+      addRecurringBtn('+ Wiederkehrende Einnahme', 'income'),
+      totalFooter(incomeRows.length, sumAmounts(incomeRules) + sumAmounts(oneOffIncomeTxs), 'pos')));
 
     // Gemeinsame monatliche Fixkosten — shared monthly rules only. They count
     // half for each person, regardless of who actually pays the bill.
-    var monthlySharedRows = rules
+    var monthlySharedRules = rules
       .filter(function (r) {
         return r.active && r.type === 'expense' && r.shared === true &&
           r.interval === 'monthly' && r.category !== 'sparen';
-      })
-      .map(ruleSwipeRow);
+      });
+    var monthlySharedRows = monthlySharedRules.map(ruleSwipeRow);
     view.appendChild(sectionCard('Gemeinsame monatliche Fixkosten', monthlySharedRows,
       'Noch keine gemeinsamen monatlichen Fixkosten. Miete, Nebenkosten, Kredite oder Lebensmittel-Beiträge hier als „Gemeinsam“ anlegen.',
       addRecurringBtn('+ Monatliche Fixkosten', 'expense', {
         shared: true,
         interval: 'monthly',
         title: 'Neue gemeinsame Fixkosten'
-      })));
+      }),
+      totalFooter(monthlySharedRows.length, sumAmounts(monthlySharedRules), 'neg', 'Summe gemeinsam')));
 
     // Gemeinsame Jahres-/Quartalskosten — shared non-monthly rules live here
     // so annual bills are visibly separate from the monthly baseline.
-    var nonMonthlySharedRows = rules
+    var nonMonthlySharedRules = rules
       .filter(function (r) {
         return r.active && r.type === 'expense' && r.shared === true &&
           r.interval !== 'monthly' && r.category !== 'sparen';
-      })
-      .map(ruleSwipeRow);
+      });
+    var nonMonthlySharedRows = nonMonthlySharedRules.map(ruleSwipeRow);
     view.appendChild(sectionCard('Gemeinsame Jahres-/Quartalskosten', nonMonthlySharedRows,
       'Keine gemeinsamen jährlichen oder vierteljährlichen Kosten. Camper-Versicherung, GEZ oder Steuer hier anlegen.',
       addRecurringBtn('+ Gemeinsame Jahreskosten', 'expense', {
         shared: true,
         interval: 'yearly',
         title: 'Neue gemeinsame Jahreskosten'
-      })));
+      }),
+      totalFooter(nonMonthlySharedRows.length, sumAmounts(nonMonthlySharedRules), 'neg', 'Summe gemeinsam')));
 
     // Sparen & Anlegen — wealth building, never counted as consumption: savings
     // rules (own or shared) plus one-off savings bookings this month.
-    var savingRuleRows = rules
+    var savingRules = rules
       .filter(function (r) {
         return r.active && r.type === 'expense' && r.category === 'sparen' &&
           (r.payerId === selectedPerson || r.shared === true);
-      })
-      .map(ruleSwipeRow);
+      });
+    var savingRuleRows = savingRules.map(ruleSwipeRow);
     var savingTxs = txs.filter(function (t) {
       return t.type === 'expense' && t.category === 'sparen' && !t.recurringId &&
         (t.payerId === selectedPerson || t.shared === true) &&
         App.monthKey(t.date) === selectedMonth;
     });
     var savingRows = savingRuleRows.concat(savingTxs.map(txSwipeRow));
-    var savingCard = sectionCard('Sparen & Anlegen', savingRows,
+    view.appendChild(sectionCard('Sparen & Anlegen', savingRows,
       'Noch keine Sparraten. Lege z. B. deinen ETF-Sparplan als wiederkehrende Sparrate an.',
       addRecurringBtn('+ Sparrate anlegen', 'expense', {
         category: 'sparen',
         title: 'Neue Sparrate'
-      }));
-    if (savingRows.length) {
-      var savingFooter = App.el('p', 'row-sub',
-        'Zählt als Vermögensaufbau · Σ ' + App.fmtEUR(sum.savingsCents) + ' diesen Monat');
-      savingFooter.style.textAlign = 'center';
-      savingFooter.style.padding = '10px 0 2px';
-      savingCard.appendChild(savingFooter);
-    }
-    view.appendChild(savingCard);
+      }),
+      totalFooter(savingRows.length, sumAmounts(savingRules) + sumAmounts(savingTxs), 'saving')));
 
     // Private laufende Kosten — recurring costs that belong only to this person.
-    var privRuleRows = rules
+    var privRules = rules
       .filter(function (r) {
         return r.active && r.type === 'expense' && r.payerId === selectedPerson &&
           r.shared !== true && r.category !== 'sparen';
-      })
-      .map(ruleSwipeRow);
-    var privateRecurringCard = sectionCard('Private laufende Kosten', privRuleRows,
+      });
+    var privRuleRows = privRules.map(ruleSwipeRow);
+    view.appendChild(sectionCard('Private laufende Kosten', privRuleRows,
       'Keine privaten laufenden Kosten. Abos, Kontoführung, Sport oder persönliche Versicherungen hier anlegen.',
       addRecurringBtn('+ Private laufende Kosten', 'expense', {
         shared: false,
         privateExpense: true,
         category: 'abos',
         title: 'Private laufende Kosten'
-      }));
-    if (privRuleRows.length) {
-      var recurringFooter = App.el('p', 'row-sub',
-        privRuleRows.length + ' ' + (privRuleRows.length === 1 ? 'Eintrag' : 'Einträge') +
-        ' · Σ ' + App.fmtEUR(sum.privateRecurringCents));
-      recurringFooter.style.textAlign = 'center';
-      recurringFooter.style.padding = '10px 0 2px';
-      privateRecurringCard.appendChild(recurringFooter);
-    }
-    view.appendChild(privateRecurringCard);
+      }),
+      totalFooter(privRuleRows.length, sumAmounts(privRules), 'neg')));
 
     // Private Ausgaben — one-off expenses this month.
     var privTxs = txs.filter(function (t) {
@@ -466,21 +471,10 @@
         t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
     });
     var privRows = privTxs.map(txSwipeRow);
-    var privCard = sectionCard('Private Ausgaben', privRows,
+    view.appendChild(sectionCard('Private Ausgaben', privRows,
       'In diesem Monat keine privaten Ausgaben.',
-      null);
-    if (privRows.length) {
-      var countLabel = privRows.length === 1 ? 'Eintrag' : 'Einträge';
-      var privateListCents = privTxs.reduce(function (sum, tx) {
-        return sum + (Number(tx.amountCents) || 0);
-      }, 0);
-      var footer = App.el('p', 'row-sub',
-        privRows.length + ' ' + countLabel + ' · Σ ' + App.fmtEUR(privateListCents));
-      footer.style.textAlign = 'center';
-      footer.style.padding = '10px 0 2px';
-      privCard.appendChild(footer);
-    }
-    view.appendChild(privCard);
+      null,
+      totalFooter(privRows.length, sumAmounts(privTxs), 'neg')));
 
     root.appendChild(view);
   }

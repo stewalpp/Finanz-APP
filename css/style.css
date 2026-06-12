@@ -1279,6 +1279,22 @@ textarea.input {
   margin-top: 16px;
 }
 
+.section-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--sep);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.section-total > span:first-child {
+  min-width: 0;
+}
+
 .section-title {
   font-size: 13px;
   font-weight: 600;
