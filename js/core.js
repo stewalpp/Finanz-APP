@@ -390,6 +390,7 @@
     haushalt:     { label: 'Haushalt & Möbel',      emoji: '🛋️', icon: 'sofa',               color: '#98989D', type: 'expense' },
     sparen:       { label: 'Sparen & Anlegen',      emoji: '🏦',  icon: 'piggy-bank',         color: '#00C7BE', type: 'expense' },
     kredite:      { label: 'Kredite',               emoji: '💳',  icon: 'credit-card',        color: '#C76E5A', type: 'expense' },
+    sonderkosten: { label: 'Sonderkosten',          emoji: '🧾',  icon: 'receipt-text',       color: '#FF7A1A', type: 'expense' },
     ausgleich:    { label: 'Ausgleich',             emoji: '🤝',  icon: 'handshake',          color: '#8E8E93', type: 'expense' },
     sonstiges:    { label: 'Sonstiges',             emoji: '📦',  icon: 'package',            color: '#8E8E93', type: 'expense' }
   };

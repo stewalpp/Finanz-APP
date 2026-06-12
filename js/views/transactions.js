@@ -243,7 +243,8 @@
 
   // ---------------------------------------------------------------- editor
 
-  // defaults (optional): { shared, payerId } to preset a new booking from writable views.
+  // defaults (optional): { type, category, shared, payerId, date, note, notePlaceholder, title }
+  // to preset a new booking from writable views.
   function openEditor(tx, defaults) {
     // Settlements must not be edited: the editor has no 'ausgleich' category, so a
     // type switch would silently convert the transfer into a regular booking and
@@ -255,9 +256,13 @@
     var isEdit = !!tx;
     defaults = defaults || {};
     var members = getMembers();
+    var defType = defaults.type === 'income' ? 'income' : 'expense';
+    var defCategory = typeof defaults.category === 'string' ? defaults.category : null;
+    var defList = App.catList(defType);
+    var defCategoryValid = defCategory && defList.some(function (cat) { return cat.key === defCategory; });
     var st = {
-      type: isEdit ? tx.type : 'expense',
-      category: isEdit ? tx.category : 'lebensmittel',
+      type: isEdit ? tx.type : defType,
+      category: isEdit ? tx.category : (defCategoryValid ? defCategory : (defType === 'income' ? 'gehalt' : 'lebensmittel')),
       payerId: isEdit ? tx.payerId : (defaults.payerId === 'p2' ? 'p2' : 'p1'),
       shared: isEdit ? !!tx.shared : defaults.shared === true   // default: privat (zählt nicht in die Paar-Bilanz)
     };
@@ -344,7 +349,7 @@
     var dateInput = document.createElement('input');
     dateInput.type = 'date';
     dateInput.className = 'input';
-    dateInput.value = isEdit ? tx.date : App.todayISO();
+    dateInput.value = isEdit ? tx.date : (typeof defaults.date === 'string' ? defaults.date : App.todayISO());
     dateGroup.appendChild(dateInput);
     content.appendChild(dateGroup);
 
@@ -416,9 +421,9 @@
     var noteInput = document.createElement('input');
     noteInput.type = 'text';
     noteInput.className = 'input';
-    noteInput.placeholder = 'Notiz (z. B. Rewe, Netflix …)';
+    noteInput.placeholder = defaults.notePlaceholder || 'Notiz (z. B. Rewe, Netflix …)';
     noteInput.autocomplete = 'off';
-    noteInput.value = isEdit ? (tx.note || '') : '';
+    noteInput.value = isEdit ? (tx.note || '') : (typeof defaults.note === 'string' ? defaults.note : '');
     noteGroup.appendChild(noteInput);
     content.appendChild(noteGroup);
 
@@ -479,7 +484,7 @@
     }
 
     App.showSheet({
-      title: isEdit ? 'Buchung bearbeiten' : 'Neue Buchung',
+      title: isEdit ? 'Buchung bearbeiten' : (defaults.title || 'Neue Buchung'),
       content: content
     });
 

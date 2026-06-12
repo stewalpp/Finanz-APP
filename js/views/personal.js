@@ -238,7 +238,8 @@
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', tx.note || cat.label));
-    main.appendChild(App.el('div', 'row-sub', cat.label + ' · ' + App.fmtDate(tx.date)));
+    main.appendChild(App.el('div', 'row-sub', cat.label + ' · ' + App.fmtDate(tx.date) +
+      (tx.shared === true ? ' · Gemeinsam' : '')));
 
     var trailing = App.el('div', 'row-trailing');
     var isIncome = tx.type === 'income';
@@ -383,6 +384,23 @@
     return btn;
   }
 
+  // a button that opens the booking editor preset for this person
+  function addTransactionBtn(label, opts) {
+    var btn = App.el('button', 'btn btn-secondary', label);
+    btn.type = 'button';
+    btn.style.marginTop = '12px';
+    btn.addEventListener('click', function () {
+      if (Views.transactions && Views.transactions.openEditor) {
+        var defaults = { type: 'expense', payerId: selectedPerson, shared: false };
+        Object.keys(opts || {}).forEach(function (key) {
+          defaults[key] = opts[key];
+        });
+        Views.transactions.openEditor(null, defaults);
+      }
+    });
+    return btn;
+  }
+
   function render(root) {
     selectedMonth = App.getMonth(); // shared across tabs — pick up switches made elsewhere
 
@@ -474,6 +492,22 @@
       }),
       totalFooter(savingRows.length, sumRecurringMonthlyCents(savingRules) + sumAmounts(savingTxs), 'saving', 'Summe / Monat')));
 
+    // Sonderkosten — irregular one-off costs that should stand out from daily spending.
+    var specialTxs = txs.filter(function (t) {
+      return t.type === 'expense' && t.category === 'sonderkosten' && !t.recurringId &&
+        (t.payerId === selectedPerson || t.shared === true) &&
+        App.monthKey(t.date) === selectedMonth;
+    });
+    var specialRows = specialTxs.map(txSwipeRow);
+    view.appendChild(sectionCard('Sonderkosten', specialRows,
+      'Keine Sonderkosten in diesem Monat. TÜV, HU, Hochzeit, Nachzahlungen oder andere ungeplante Kosten hier erfassen.',
+      addTransactionBtn('+ Sonderkosten', {
+        category: 'sonderkosten',
+        title: 'Neue Sonderkosten',
+        notePlaceholder: 'Notiz (z. B. TÜV, HU, Hochzeit, Nachzahlung …)'
+      }),
+      totalFooter(specialRows.length, sumAmounts(specialTxs), 'neg')));
+
     // Private laufende Kosten — recurring costs that belong only to this person.
     var privRules = rules
       .filter(function (r) {
@@ -495,6 +529,7 @@
     var privTxs = txs.filter(function (t) {
       return t.payerId === selectedPerson && t.type === 'expense' && t.shared !== true &&
         t.category !== 'sparen' &&
+        t.category !== 'sonderkosten' &&
         t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
     });
     var privRows = privTxs.map(txSwipeRow);

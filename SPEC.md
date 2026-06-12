@@ -205,6 +205,7 @@ geschenke:     Geschenke              🎁  #FF6482  expense
 haushalt:      Haushalt & Möbel       🛋️  #98989D  expense
 sparen:        Sparen & Anlegen       🏦  #00C7BE  expense
 kredite:       Kredite                💳  #C76E5A  expense
+sonderkosten:  Sonderkosten           🧾  #FF7A1A  expense
 ausgleich:     Ausgleich              🤝  #8E8E93  expense   (special, hidden from pickers)
 sonstiges:     Sonstiges              📦  #8E8E93  expense
 ```

@@ -478,7 +478,9 @@
       [2, 19, { type: 'expense', amountCents: 1860, category: 'gesundheit', note: 'Apotheke', payerId: 'p2', shared: false }],
       [2, 26, { type: 'expense', amountCents: 5990, category: 'kleidung', note: 'H&M', payerId: 'p1', shared: false }],
       [3, 4, { type: 'expense', amountCents: 1250, category: 'geschenke', note: 'Blumenstrauß', payerId: 'p1', shared: false }],
-      [3, 9, { type: 'expense', amountCents: 8420, category: 'haushalt', note: 'Amazon Haushaltszeug', payerId: 'p2', shared: true }]
+      [3, 9, { type: 'expense', amountCents: 8420, category: 'haushalt', note: 'Amazon Haushaltszeug', payerId: 'p2', shared: true }],
+      [3, 12, { type: 'expense', amountCents: 12990, category: 'sonderkosten', note: 'TÜV & HU', payerId: 'p1', shared: false }],
+      [3, 18, { type: 'expense', amountCents: 24900, category: 'sonderkosten', note: 'Nachzahlung Nebenkosten', payerId: 'p2', shared: true }]
     ];
     oneOffs.forEach(function (entry) {
       addTx(months[entry[0]], entry[1], entry[2]);

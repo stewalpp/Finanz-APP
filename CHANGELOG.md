@@ -4,6 +4,12 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (dreiundzwanzigster Wurf)
+
+- **Sonderkosten im Persönlich-Bereich ergänzt.** Neue Kategorie „Sonderkosten" für TÜV/HU,
+  Hochzeit, Nachzahlungen und andere ungeplante Kosten; im Tab „Persönlich" gibt es dafür
+  eine eigene Karte mit Summe und „+ Sonderkosten"-Button. SW-Cache `v38`.
+
 ## 2026-06-12 (zweiundzwanzigster Wurf)
 
 - **Dashboard-Diagramme auf Fixkosten umgestellt.** Statt der gemeinsamen Ausgaben nach Kategorie
