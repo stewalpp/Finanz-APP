@@ -240,6 +240,20 @@
     return row;
   }
 
+  function txSwipeRow(tx) {
+    return App.swipeToDelete(txRow(tx), function () {
+      Store.deleteTransaction(tx.id);
+      App.toast('Buchung gelöscht');
+    }, { ariaLabel: 'Buchung löschen' });
+  }
+
+  function ruleSwipeRow(rule) {
+    return App.swipeToDelete(ruleRow(rule), function () {
+      Store.deleteRecurring(rule.id);
+      App.toast('Eintrag gelöscht');
+    }, { ariaLabel: 'Regel löschen' });
+  }
+
   function sectionCard(title, rows, emptyText, addBtn) {
     var card = App.el('div', 'card');
     card.appendChild(App.el('div', 'card-title', title));
@@ -293,13 +307,13 @@
         return r.active && r.type === 'income' &&
           (r.payerId === selectedPerson || r.shared === true);
       })
-      .map(ruleRow);
+      .map(ruleSwipeRow);
     var oneOffIncomeRows = txs
       .filter(function (t) {
         return t.payerId === selectedPerson && t.type === 'income' && !t.recurringId &&
           t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
       })
-      .map(txRow);
+      .map(txSwipeRow);
     view.appendChild(sectionCard('Gehalt & wiederkehrende Einnahmen',
       incomeRuleRows.concat(oneOffIncomeRows),
       'Lege z. B. dein Gehalt als wiederkehrende Einnahme an – es erscheint dann jeden Monat automatisch.',
@@ -312,7 +326,7 @@
         return r.active && r.type === 'expense' && r.shared === true &&
           r.interval === 'monthly' && r.category !== 'sparen';
       })
-      .map(ruleRow);
+      .map(ruleSwipeRow);
     view.appendChild(sectionCard('Gemeinsame monatliche Fixkosten', monthlySharedRows,
       'Noch keine gemeinsamen monatlichen Fixkosten. Miete, Nebenkosten, Kredite oder Lebensmittel-Beiträge hier als „Gemeinsam“ anlegen.',
       addRecurringBtn('+ Monatliche Fixkosten', 'expense', {
@@ -328,7 +342,7 @@
         return r.active && r.type === 'expense' && r.shared === true &&
           r.interval !== 'monthly' && r.category !== 'sparen';
       })
-      .map(ruleRow);
+      .map(ruleSwipeRow);
     view.appendChild(sectionCard('Gemeinsame Jahres-/Quartalskosten', nonMonthlySharedRows,
       'Keine gemeinsamen jährlichen oder vierteljährlichen Kosten. Camper-Versicherung, GEZ oder Steuer hier anlegen.',
       addRecurringBtn('+ Gemeinsame Jahreskosten', 'expense', {
@@ -344,13 +358,13 @@
         return r.active && r.type === 'expense' && r.category === 'sparen' &&
           (r.payerId === selectedPerson || r.shared === true);
       })
-      .map(ruleRow);
+      .map(ruleSwipeRow);
     var savingTxs = txs.filter(function (t) {
       return t.type === 'expense' && t.category === 'sparen' && !t.recurringId &&
         (t.payerId === selectedPerson || t.shared === true) &&
         App.monthKey(t.date) === selectedMonth;
     });
-    var savingRows = savingRuleRows.concat(savingTxs.map(txRow));
+    var savingRows = savingRuleRows.concat(savingTxs.map(txSwipeRow));
     var savingCard = sectionCard('Sparen & Anlegen', savingRows,
       'Noch keine Sparraten. Lege z. B. deinen ETF-Sparplan als wiederkehrende Sparrate an.',
       addRecurringBtn('+ Sparrate anlegen', 'expense', {
@@ -372,7 +386,7 @@
         return r.active && r.type === 'expense' && r.payerId === selectedPerson &&
           r.shared !== true && r.category !== 'sparen';
       })
-      .map(ruleRow);
+      .map(ruleSwipeRow);
     var privateRecurringCard = sectionCard('Private laufende Kosten', privRuleRows,
       'Keine privaten laufenden Kosten. Abos, Kontoführung, Sport oder persönliche Versicherungen hier anlegen.',
       addRecurringBtn('+ Private laufende Kosten', 'expense', {
@@ -395,16 +409,19 @@
     var privTxs = txs.filter(function (t) {
       return t.payerId === selectedPerson && t.type === 'expense' && t.shared !== true &&
         t.category !== 'sparen' &&
-        !t.recurringId && t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
+        t.category !== 'ausgleich' && App.monthKey(t.date) === selectedMonth;
     });
-    var privRows = privTxs.map(txRow);
+    var privRows = privTxs.map(txSwipeRow);
     var privCard = sectionCard('Private Ausgaben', privRows,
       'In diesem Monat keine privaten Ausgaben.',
       null);
     if (privRows.length) {
       var countLabel = privRows.length === 1 ? 'Eintrag' : 'Einträge';
+      var privateListCents = privTxs.reduce(function (sum, tx) {
+        return sum + (Number(tx.amountCents) || 0);
+      }, 0);
       var footer = App.el('p', 'row-sub',
-        privRows.length + ' ' + countLabel + ' · Σ ' + App.fmtEUR(sum.privateSpentCents));
+        privRows.length + ' ' + countLabel + ' · Σ ' + App.fmtEUR(privateListCents));
       footer.style.textAlign = 'center';
       footer.style.padding = '10px 0 2px';
       privCard.appendChild(footer);

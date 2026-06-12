@@ -153,6 +153,113 @@
     return node;
   };
 
+  // Wrap a list row with a right-swipe delete action. The row keeps its own click
+  // handlers; swiping right reveals "Löschen", and a long swipe deletes directly.
+  App.swipeToDelete = function (rowEl, onDelete, opts) {
+    opts = opts || {};
+    var actionW = opts.width || 88;
+    var cell = App.el('div', 'swipe-cell swipe-delete-right');
+    var action = App.el('button', 'swipe-action', opts.label || 'Löschen');
+    action.type = 'button';
+    action.setAttribute('aria-label', opts.ariaLabel || 'Eintrag löschen');
+    cell.appendChild(action);
+    cell.appendChild(rowEl);
+
+    var open = false;
+    var startX = 0, startY = 0, curX = 0, base = 0;
+    var dragging = false, decided = false, suppressClick = false;
+
+    function setX(x) {
+      curX = x;
+      rowEl.style.transform = x ? 'translateX(' + x + 'px)' : '';
+    }
+
+    function closeCell() {
+      open = false;
+      cell.classList.remove('dragging');
+      cell.classList.remove('open');
+      setX(0);
+      if (App._openSwipeClose === closeCell) App._openSwipeClose = null;
+    }
+
+    function openCell() {
+      open = true;
+      cell.classList.remove('dragging');
+      cell.classList.add('open');
+      setX(actionW);
+      if (App._openSwipeClose && App._openSwipeClose !== closeCell) App._openSwipeClose();
+      App._openSwipeClose = closeCell;
+    }
+
+    function doDelete() {
+      if (App._openSwipeClose === closeCell) App._openSwipeClose = null;
+      if (typeof onDelete === 'function') onDelete();
+    }
+
+    function end() {
+      rowEl.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      dragging = false;
+      decided = false;
+    }
+
+    function onMove(e) {
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      if (!decided) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (Math.abs(dy) >= Math.abs(dx)) { end(); return; }
+        decided = true;
+        dragging = true;
+        cell.classList.add('dragging');
+        try { rowEl.setPointerCapture(e.pointerId); } catch (err) { /* not critical */ }
+        if (App._openSwipeClose && App._openSwipeClose !== closeCell) App._openSwipeClose();
+      }
+      if (e.cancelable) e.preventDefault();
+      var x = base + dx;
+      if (x < 0) x = x * 0.15;
+      if (x > actionW) x = actionW + (x - actionW) * 0.35;
+      setX(x);
+    }
+
+    function onUp() {
+      if (dragging) {
+        cell.classList.remove('dragging');
+        suppressClick = true;
+        setTimeout(function () { suppressClick = false; }, 80);
+        if (curX > actionW * 1.45) doDelete();
+        else if (curX > actionW * 0.45) openCell();
+        else closeCell();
+      }
+      end();
+    }
+
+    rowEl.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      startX = e.clientX;
+      startY = e.clientY;
+      base = open ? actionW : 0;
+      decided = false;
+      dragging = false;
+      rowEl.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+    });
+
+    rowEl.addEventListener('click', function (e) {
+      if (suppressClick) { e.preventDefault(); e.stopPropagation(); suppressClick = false; return; }
+      if (open) { e.preventDefault(); e.stopPropagation(); closeCell(); }
+    }, true);
+
+    action.addEventListener('click', function (e) {
+      e.stopPropagation();
+      doDelete();
+    });
+
+    return cell;
+  };
+
   // Card header row: title on the left, optional (i) button on the right that
   // opens an explanation sheet. makeContent (lazy) returns the sheet content.
   App.cardHead = function (title, makeContent) {

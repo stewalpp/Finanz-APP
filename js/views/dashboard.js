@@ -701,7 +701,7 @@
     view.appendChild(buildMonthNav());
     view.appendChild(buildBudgetCard(budget));       // hero: combined + per-person
     view.appendChild(buildPersonMonthCard(txs, rules));
-    view.appendChild(buildExpenseCategoryCard(txs));
+    view.appendChild(buildSharedCategoryCard(txs));
 
     root.appendChild(view);
   }

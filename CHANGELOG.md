@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (dreizehnter Wurf)
+
+- **Dashboard und Buchungen klarer beschriftet.** Das Dashboard zeigt beim Kreisdiagramm wieder
+  eindeutig „Gemeinsame Ausgaben nach Kategorie"; der Buchungen-Tab nennt die Summe jetzt
+  „Alle Ausgaben im [Monat]".
+- **Swipe-Löschen zurückgebracht.** Buchungen und sichtbare Einträge in „Persönlich" können per
+  Swipe nach rechts gelöscht werden. Private Monatsbuchungen in „Persönlich" zeigen jetzt alle
+  privaten Buchungen der Person im Monat, damit manuelle Einträge nicht ausgefiltert werden.
+  SW-Cache `v27`.
+
 ## 2026-06-11 (zwölfter Wurf)
 
 - **Buchungen als reine Monatsliste.** Der Tab zeigt jetzt immer alle echten Buchungen des

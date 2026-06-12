@@ -162,18 +162,18 @@
     });
     var balance = incomeSum - expenseSum;
     var card = App.el('div', 'card hero-card');
-    card.appendChild(App.cardHead('Ausgegeben · ' + App.fmtMonth(state.month), function () {
+    card.appendChild(App.cardHead('Alle Ausgaben im ' + App.fmtMonth(state.month), function () {
       return App.infoContent([
         { row: ['Gebuchte Ausgaben', '−' + App.fmtEUR(expenseSum), 'neg'] },
         { row: ['Einnahmen', '+' + App.fmtEUR(incomeSum), 'pos'] },
         { row: ['Saldo', (balance >= 0 ? '+' : '−') + App.fmtEUR(Math.abs(balance)), balance >= 0 ? 'pos' : 'neg'] },
-        { p: 'Nur echte Buchungen dieses Monats. Keine offenen Fixkosten oder geplanten Regeln.' }
+        { p: 'Unten stehen alle echten Buchungen dieses Monats. Die große Zahl ist die Summe der Ausgaben.' }
       ]);
     }));
     var big = App.el('div', 'hero-amount', App.fmtEUR(expenseSum));
     card.appendChild(big);
     var n = entries.length;
-    var subText = (n === 1 ? '1 Eintrag' : n + ' Eintr\u00e4ge');
+    var subText = (n === 1 ? '1 Buchung im Monat' : n + ' Buchungen im Monat');
     if (incomeSum > 0) subText += ' · Einnahmen ' + App.fmtEUR(incomeSum);
     var sub = App.el('div', 'hero-sub', subText);
     card.appendChild(sub);
@@ -217,7 +217,11 @@
       wrap.appendChild(App.el('div', 'section-title', App.fmtDateShort(g.date)));
       var listGroup = App.el('div', 'list-group');
       g.items.forEach(function (entry) {
-        listGroup.appendChild(buildTxRow(entry.item));
+        var tx = entry.item;
+        listGroup.appendChild(App.swipeToDelete(buildTxRow(tx), function () {
+          Store.deleteTransaction(tx.id);
+          App.toast('Buchung gelöscht');
+        }, { ariaLabel: 'Buchung löschen' }));
       });
       wrap.appendChild(listGroup);
     });
