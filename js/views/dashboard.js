@@ -10,6 +10,7 @@
   // ---------------------------------------------------------------------------
   let selectedMonth = null; // 'YYYY-MM'; lazily initialized to the current month
   let chartPerson = 'p1';   // person selected in the "Ausgaben pro Person" chart
+  const FIXED_COST_COLORS = ['#0A84FF', '#30D158', '#FF9F0A', '#FF375F', '#BF5AF2', '#64D2FF', '#FFD60A', '#8E8E93'];
 
   // ---------------------------------------------------------------------------
   // Small helpers
@@ -506,6 +507,121 @@
     return true;
   }
 
+  function intervalMonths(interval) {
+    if (interval === 'quarterly') return 3;
+    if (interval === 'halfyearly') return 6;
+    if (interval === 'yearly') return 12;
+    return 1;
+  }
+
+  function fixedCostAmount(rule, mode) {
+    const amount = Number(rule && rule.amountCents) || 0;
+    if (mode === 'annual') return Math.round(amount * 12 / intervalMonths(rule.interval));
+    return Math.round(amount / intervalMonths(rule.interval));
+  }
+
+  function costLegendRow(entry, totalCents) {
+    const row = App.el('div', 'legend-row');
+
+    const dot = App.el('span', 'dot');
+    dot.style.background = entry.color;
+    row.appendChild(dot);
+
+    const labelWrap = App.el('span');
+    labelWrap.style.flex = '1';
+    labelWrap.style.minWidth = '0';
+
+    const label = App.el('span', '', entry.label);
+    label.style.display = 'block';
+    label.style.overflow = 'hidden';
+    label.style.textOverflow = 'ellipsis';
+    label.style.whiteSpace = 'nowrap';
+    labelWrap.appendChild(label);
+
+    if (entry.sub) {
+      const sub = App.el('span', '', entry.sub);
+      sub.style.display = 'block';
+      sub.style.color = 'var(--text-2)';
+      sub.style.fontSize = '12px';
+      sub.style.overflow = 'hidden';
+      sub.style.textOverflow = 'ellipsis';
+      sub.style.whiteSpace = 'nowrap';
+      labelWrap.appendChild(sub);
+    }
+    row.appendChild(labelWrap);
+
+    row.appendChild(App.el('span', '', App.fmtEUR(entry.cents)));
+
+    const pct = totalCents > 0 ? Math.round((entry.cents / totalCents) * 100) : 0;
+    const pctEl = App.el('span', '', pct + ' %');
+    pctEl.style.color = 'var(--text-2)';
+    pctEl.style.minWidth = '42px';
+    pctEl.style.textAlign = 'right';
+    row.appendChild(pctEl);
+
+    return row;
+  }
+
+  function fixedCostEntries(rules, mode) {
+    return (rules || [])
+      .filter(function (rule) {
+        if (!rule || !rule.active || rule.type !== 'expense' || rule.shared !== true || rule.category === 'sparen') return false;
+        return mode === 'monthly' ? rule.interval === 'monthly' : rule.interval !== 'monthly';
+      })
+      .map(function (rule, index) {
+        const cat = App.cat(rule.category);
+        const cents = fixedCostAmount(rule, mode === 'annual' ? 'annual' : 'monthly');
+        const interval = intervalWord(rule.interval);
+        const sub = mode === 'annual'
+          ? interval + ' · ' + cat.label + ' · ' + App.fmtEUR(rule.amountCents) + ' je Zahlung'
+          : cat.label + ' · zahlt ' + (App.memberName(rule.payerId) || '–');
+        return {
+          label: rule.name || cat.label,
+          sub: sub,
+          cents: cents,
+          color: FIXED_COST_COLORS[index % FIXED_COST_COLORS.length]
+        };
+      })
+      .filter(function (entry) { return entry.cents > 0; })
+      .sort(function (a, b) { return b.cents - a.cents; });
+  }
+
+  function buildFixedCostChartCard(rules, mode) {
+    const isAnnual = mode === 'annual';
+    const title = isAnnual ? 'Gemeinsame Jahres-/Quartalskosten' : 'Gemeinsame monatliche Fixkosten';
+    const card = App.el('div', 'card');
+    card.appendChild(App.cardHead(title, function () {
+      return App.infoContent([
+        { p: isAnnual
+          ? 'Alle gemeinsamen jährlichen, halbjährlichen und vierteljährlichen Regeln als Jahressumme. So zählt GEZ vierteljährlich viermal pro Jahr.'
+          : 'Alle gemeinsamen monatlichen Fixkosten aus dem Bereich „Persönlich".' }
+      ]);
+    }));
+
+    const entries = fixedCostEntries(rules, isAnnual ? 'annual' : 'monthly');
+    const totalCents = entries.reduce(function (sum, entry) { return sum + entry.cents; }, 0);
+    const chartWrap = App.el('div');
+    const drawn = Charts.donut(chartWrap, entries.map(function (entry) {
+      return { label: entry.label, value: entry.cents, color: entry.color };
+    }), {
+      centerTitle: App.fmtEUR(totalCents),
+      centerSub: isAnnual ? 'pro Jahr' : 'pro Monat'
+    });
+
+    if (!drawn) {
+      card.appendChild(emptyState(isAnnual ? 'calendar-days' : 'receipt-text', isAnnual
+        ? 'Keine gemeinsamen Jahres- oder Quartalskosten angelegt.'
+        : 'Keine gemeinsamen monatlichen Fixkosten angelegt.'));
+      return card;
+    }
+
+    card.appendChild(chartWrap);
+    entries.forEach(function (entry) {
+      card.appendChild(costLegendRow(entry, totalCents));
+    });
+    return card;
+  }
+
   // shared (gemeinsame) expense bookings of the month, by category
   function buildSharedCategoryCard(txs) {
     const card = App.el('div', 'card');
@@ -707,7 +823,8 @@
     view.appendChild(buildMonthNav());
     view.appendChild(buildBudgetCard(budget));       // hero: combined + per-person
     view.appendChild(buildPersonMonthCard(txs, rules));
-    view.appendChild(buildSharedCategoryCard(txs));
+    view.appendChild(buildFixedCostChartCard(rules, 'monthly'));
+    view.appendChild(buildFixedCostChartCard(rules, 'annual'));
 
     root.appendChild(view);
   }

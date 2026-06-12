@@ -403,8 +403,8 @@ re-renders. Get data only via `Store.*`, compute via `Analysis.*`.
    explanation sheet (live numbers + where the related Abrechnung lives).
 3. Couple balance card: if owesCents>0 '«Name» schuldet «Name» X' + `.btn-secondary` 'Ausgleichen' → confirm → adds ausgleich transaction (payer=debtor, amount=owesCents, shared=false, note='Ausgleich', date today); else 'Ihr seid quitt ✓'
 4. Card 'Anstehende Fixkosten' (only if rules exist): up to 5 `Analysis.upcomingForMonth` rows — name, due date, amount, status badge (Bezahlt ✓ green / Fällig orange / Überfällig red) and for unpaid a small 'Buchen' button → creates transaction from rule (recurringId set, date = dueDate) + toast. Footer link-row 'Alle Fixkosten →' switches tab.
-5. Card 'Gemeinsame Ausgaben nach Kategorie': `Charts.donut` over shared (shared===true) expense txs of the month (centerTitle = their total) + legend rows (`.legend-row`: color dot, label, amount, percent). Empty → `.empty-state`.
-5b. Card 'Ausgaben pro Person': `.segmented` person switcher (module-level state), donut over the selected person's non-shared expense txs at full amount PLUS every shared expense tx at half amount; note 'Private Ausgaben plus die Hälfte der gemeinsamen Ausgaben.' Empty → `.empty-state`.
+5. Card 'Gemeinsame monatliche Fixkosten': `Charts.donut` over active shared monthly recurring expense rules (savings excluded), centerTitle = monthly total, legend rows (`.legend-row`: color dot, rule name, category/payer subline, amount, percent). Empty → `.empty-state`.
+5b. Card 'Gemeinsame Jahres-/Quartalskosten': `Charts.donut` over active shared non-monthly recurring expense rules (savings excluded), centerTitle = annualized total (`monthly ×12`, `quarterly ×4`, `halfyearly ×2`, `yearly ×1`), legend rows with interval and per-payment amount. Empty → `.empty-state`.
 6. Card 'Letzte Buchungen': 5 most recent of the month (transaction rows like transactions view), link-row 'Alle anzeigen →'.
 First-use (no transactions at all): friendly `.empty-state` with CTA buttons 'Erste Buchung' (opens editor) and hint to demo data in settings.
 

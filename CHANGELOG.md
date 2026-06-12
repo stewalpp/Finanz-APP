@@ -4,6 +4,12 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (zweiundzwanzigster Wurf)
+
+- **Dashboard-Diagramme auf Fixkosten umgestellt.** Statt der gemeinsamen Ausgaben nach Kategorie
+  zeigt die Übersicht jetzt zwei Donut-Diagramme: gemeinsame monatliche Fixkosten pro Monat und
+  gemeinsame Jahres-/Quartalskosten als Jahressumme. SW-Cache `v37`.
+
 ## 2026-06-12 (einundzwanzigster Wurf)
 
 - **Intervall-Summen im Persönlich-Bereich korrigiert.** Gemeinsame Jahres-/Quartalskosten
