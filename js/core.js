@@ -210,6 +210,12 @@
       if (!decided) {
         if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         if (Math.abs(dy) >= Math.abs(dx)) { end(); return; }
+        if (!open && dx > 0) {
+          suppressClick = true;
+          setTimeout(function () { suppressClick = false; }, 80);
+          end();
+          return;
+        }
         decided = true;
         dragging = true;
         cell.classList.add('dragging');

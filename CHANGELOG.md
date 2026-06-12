@@ -4,6 +4,13 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (fünfzehnter Wurf)
+
+- **Rechts-Swipe komplett ignoriert.** Geschlossene Buchungszeilen starten nun nur noch bei einer
+  Bewegung nach links eine Swipe-Geste. Ein Wisch nach rechts bewegt die Zeile nicht und öffnet
+  auch nicht versehentlich die Buchung.
+  SW-Cache `v29`.
+
 ## 2026-06-12 (vierzehnter Wurf)
 
 - **Swipe-Löschen auf iPhone-Richtung korrigiert.** Löschen öffnet sich jetzt nur noch beim
