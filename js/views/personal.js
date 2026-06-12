@@ -201,7 +201,7 @@
     if (sum.nonMonthlyDueCents > 0) {
       card.appendChild(summaryLine('Diesen Monat zusätzlich fällig', sum.nonMonthlyDueCents, '−', 'neg'));
       sum.nonMonthlyItems.forEach(function (item) {
-        var word = item.interval === 'quarterly' ? 'vierteljährlich' : 'jährlich';
+        var word = intervalWord(item.interval);
         var row = App.el('div', 'row-sub');
         row.style.display = 'flex';
         row.style.alignItems = 'center';
@@ -262,8 +262,7 @@
 
     var icon = App.catIcon(rule.category);
 
-    var word = rule.interval === 'quarterly' ? 'vierteljährlich'
-      : rule.interval === 'yearly' ? 'jährlich' : 'monatlich';
+    var word = intervalWord(rule.interval);
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', rule.name || cat.label));
@@ -312,6 +311,34 @@
     return (items || []).reduce(function (sum, item) {
       return sum + (Number(item && item.amountCents) || 0);
     }, 0);
+  }
+
+  function intervalMonths(interval) {
+    if (interval === 'quarterly') return 3;
+    if (interval === 'halfyearly') return 6;
+    if (interval === 'yearly') return 12;
+    return 1;
+  }
+
+  function intervalWord(interval) {
+    if (interval === 'quarterly') return 'vierteljährlich';
+    if (interval === 'halfyearly') return 'halbjährlich';
+    if (interval === 'yearly') return 'jährlich';
+    return 'monatlich';
+  }
+
+  function sumRecurringMonthlyCents(items) {
+    var sum = (items || []).reduce(function (total, item) {
+      return total + (Number(item && item.amountCents) || 0) / intervalMonths(item && item.interval);
+    }, 0);
+    return Math.round(sum);
+  }
+
+  function sumRecurringAnnualCents(items) {
+    var sum = (items || []).reduce(function (total, item) {
+      return total + (Number(item && item.amountCents) || 0) * 12 / intervalMonths(item && item.interval);
+    }, 0);
+    return Math.round(sum);
   }
 
   function totalFooter(count, cents, tone, label) {
@@ -389,7 +416,7 @@
       incomeRows,
       'Lege z. B. dein Gehalt als wiederkehrende Einnahme an – es erscheint dann jeden Monat automatisch.',
       addRecurringBtn('+ Wiederkehrende Einnahme', 'income'),
-      totalFooter(incomeRows.length, sumAmounts(incomeRules) + sumAmounts(oneOffIncomeTxs), 'pos')));
+      totalFooter(incomeRows.length, sumRecurringMonthlyCents(incomeRules) + sumAmounts(oneOffIncomeTxs), 'pos', 'Summe / Monat')));
 
     // Gemeinsame monatliche Fixkosten — shared monthly rules only. They count
     // half for each person, regardless of who actually pays the bill.
@@ -406,10 +433,10 @@
         interval: 'monthly',
         title: 'Neue gemeinsame Fixkosten'
       }),
-      totalFooter(monthlySharedRows.length, sumAmounts(monthlySharedRules), 'neg', 'Summe gemeinsam')));
+      totalFooter(monthlySharedRows.length, sumRecurringMonthlyCents(monthlySharedRules), 'neg', 'Summe / Monat')));
 
-    // Gemeinsame Jahres-/Quartalskosten — shared non-monthly rules live here
-    // so annual bills are visibly separate from the monthly baseline.
+    // Gemeinsame Jahres-/Quartalskosten — shared non-monthly rules live here.
+    // The footer annualizes them so the total reflects all payments in a year.
     var nonMonthlySharedRules = rules
       .filter(function (r) {
         return r.active && r.type === 'expense' && r.shared === true &&
@@ -417,13 +444,13 @@
       });
     var nonMonthlySharedRows = nonMonthlySharedRules.map(ruleSwipeRow);
     view.appendChild(sectionCard('Gemeinsame Jahres-/Quartalskosten', nonMonthlySharedRows,
-      'Keine gemeinsamen jährlichen oder vierteljährlichen Kosten. Camper-Versicherung, GEZ oder Steuer hier anlegen.',
+      'Keine gemeinsamen jährlichen, halbjährlichen oder vierteljährlichen Kosten. Camper-Versicherung, GEZ oder Steuer hier anlegen.',
       addRecurringBtn('+ Gemeinsame Jahreskosten', 'expense', {
         shared: true,
         interval: 'yearly',
         title: 'Neue gemeinsame Jahreskosten'
       }),
-      totalFooter(nonMonthlySharedRows.length, sumAmounts(nonMonthlySharedRules), 'neg', 'Summe gemeinsam')));
+      totalFooter(nonMonthlySharedRows.length, sumRecurringAnnualCents(nonMonthlySharedRules), 'neg', 'Summe / Jahr')));
 
     // Sparen & Anlegen — wealth building, never counted as consumption: savings
     // rules (own or shared) plus one-off savings bookings this month.
@@ -445,7 +472,7 @@
         category: 'sparen',
         title: 'Neue Sparrate'
       }),
-      totalFooter(savingRows.length, sumAmounts(savingRules) + sumAmounts(savingTxs), 'saving')));
+      totalFooter(savingRows.length, sumRecurringMonthlyCents(savingRules) + sumAmounts(savingTxs), 'saving', 'Summe / Monat')));
 
     // Private laufende Kosten — recurring costs that belong only to this person.
     var privRules = rules
@@ -462,7 +489,7 @@
         category: 'abos',
         title: 'Private laufende Kosten'
       }),
-      totalFooter(privRuleRows.length, sumAmounts(privRules), 'neg')));
+      totalFooter(privRuleRows.length, sumRecurringMonthlyCents(privRules), 'neg', 'Ø / Monat')));
 
     // Private Ausgaben — one-off expenses this month.
     var privTxs = txs.filter(function (t) {

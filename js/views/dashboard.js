@@ -223,6 +223,7 @@
 
   function intervalWord(interval) {
     return interval === 'quarterly' ? 'vierteljährlich'
+      : interval === 'halfyearly' ? 'halbjährlich'
       : interval === 'yearly' ? 'jährlich' : 'monatlich';
   }
 
@@ -642,7 +643,7 @@
   // ---------------------------------------------------------------------------
   // Detected recurring costs (moved here from the former Fixkosten tab)
   // ---------------------------------------------------------------------------
-  const INTERVAL_WORDS = { monthly: 'monatlich', quarterly: 'vierteljährlich', yearly: 'jährlich' };
+  const INTERVAL_WORDS = { monthly: 'monatlich', quarterly: 'vierteljährlich', halfyearly: 'halbjährlich', yearly: 'jährlich' };
 
   function buildSuggestionsCard(txs, rules) {
     const suggestions = Analysis.detectRecurring(txs, rules, Store.getDismissed());

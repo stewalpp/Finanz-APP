@@ -4,6 +4,13 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (einundzwanzigster Wurf)
+
+- **Intervall-Summen im Persönlich-Bereich korrigiert.** Gemeinsame Jahres-/Quartalskosten
+  werden unten jetzt als Jahressumme gerechnet: monatlich ×12, vierteljährlich ×4,
+  halbjährlich ×2, jährlich ×1. `halbjährlich` ist jetzt auch als Intervall auswählbar
+  und wird bei Fälligkeit, Export und Anzeige berücksichtigt. SW-Cache `v36`.
+
 ## 2026-06-12 (zwanzigster Wurf)
 
 - **Summen in allen Persönlich-Karten ergänzt.** Die sechs Detailkarten zeigen unten jetzt

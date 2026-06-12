@@ -177,7 +177,10 @@
   function normalizeRule(raw) {
     const amount = Math.round(Number(raw.amountCents));
     const type = raw.type === 'income' ? 'income' : 'expense';
-    const interval = raw.interval === 'quarterly' || raw.interval === 'yearly' ? raw.interval : 'monthly';
+    const rawInterval = raw.interval === 'semiannual' ? 'halfyearly' : raw.interval;
+    const interval = rawInterval === 'quarterly' || rawInterval === 'halfyearly' || rawInterval === 'yearly'
+      ? rawInterval
+      : 'monthly';
     const shared = !!raw.shared;
     return {
       id: typeof raw.id === 'string' && raw.id ? raw.id : App.uid(),

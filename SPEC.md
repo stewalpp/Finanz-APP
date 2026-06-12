@@ -12,7 +12,7 @@ like a native Apple iOS app. Features:
 
 - Quick entry of expenses/income (manual), per person, with "shared" flag
 - Dashboard with month navigation, income/expense/saved, category donut, upcoming fixed costs, couple balance ("wer schuldet wem")
-- Fixed/recurring costs (rules) with due-day, monthly/quarterly/yearly, one-tap booking when due
+- Fixed/recurring costs (rules) with due-day, monthly/quarterly/half-yearly/yearly, one-tap booking when due
 - Automatic detection of recurring costs from past transactions (suggestions)
 - Insights: 6-month trend chart, savings rate, category changes, rule-based savings tips ("Spartipps")
 - Calendar export (.ics) of fixed costs so iPhone Calendar reminds the couple
@@ -117,10 +117,10 @@ boot). `js/core.js` is loaded first and may define everything eagerly.
   type: 'expense' | 'income',
   amountCents: int > 0,
   category: string,
-  interval: 'monthly' | 'quarterly' | 'yearly',
+  interval: 'monthly' | 'quarterly' | 'halfyearly' | 'yearly',
   dueDay: int 1..28,
   dueMonth: int 1..12,        // only meaningful for 'yearly'; default 1
-  anchorMonth: 'YYYY-MM',     // first due month; used for quarterly cycle; default current month
+  anchorMonth: 'YYYY-MM',     // first due month; used for quarterly/half-yearly cycle; default current month
   payerId: 'p1' | 'p2',
   shared: boolean,
   active: boolean,
@@ -284,23 +284,24 @@ Analysis.coupleBalance(txs)
 
 Analysis.fixedMonthlyCents(rules)
 // active MONTHLY expense rules only (savings rules with category 'sparen' excluded), rounded -> int
-// Quarterly and yearly rules are NOT smoothed into the monthly figure — they count as
+// Quarterly, half-yearly and yearly rules are NOT smoothed into the monthly figure — they count as
 // individual items in their due month (availableBudget.nonMonthlyItems /
 // personalSummary.nonMonthlyItems). Savings rules count under the separate savings position.
 
 Analysis.upcomingForMonth(rules, txs, monthKey, todayISO)
 // active rules due in monthKey (monthly: always; quarterly: months since anchorMonth % 3 === 0;
-// yearly: month number === dueMonth). dueDateISO = monthKey + dueDay (zero-padded).
+// halfyearly: months since anchorMonth % 6 === 0; yearly: month number === dueMonth).
+// dueDateISO = monthKey + dueDay (zero-padded).
 // matched tx: same month AND (tx.recurringId === rule.id OR (tx.type===rule.type AND tx.category===rule.category AND |tx.amountCents - rule.amountCents| <= rule.amountCents*0.1))
 // status: 'paid' if matched; 'overdue' if dueDateISO < todayISO; else 'due'
 // -> [{rule, dueDateISO, status, matchedTxId}] sorted by dueDateISO
 
 Analysis.availableBudget(txs, rules, monthKey)
 // Forward-looking disposable budget ("frei verfügbar") for a month.
-// plannedIncome = active monthly income rules + quarterly/yearly income rules due this month
+// plannedIncome = active monthly income rules + quarterly/half-yearly/yearly income rules due this month
 //                 (full amount) + non-rule income txs of the month
 // fixed         = active monthly expense rules, savings excluded (= fixedMonthlyCents)
-// nonMonthlyDue = quarterly + yearly NON-savings expense rules due this month at full amount;
+// nonMonthlyDue = quarterly + half-yearly + yearly NON-savings expense rules due this month at full amount;
 //                 each also listed in nonMonthlyItems so the UI shows them as individual line
 //                 items (never smoothed over the other months)
 // savings       = 'sparen' rules (monthly equiv + those due this month) + unmatched non-rule
@@ -317,12 +318,12 @@ Analysis.availableBudget(txs, rules, monthKey)
 Analysis.personalSummary(txs, rules, personId, monthKey)
 // Per-person view, recurring-centric. Shared rules and shared txs count HALF for EACH
 // partner (regardless of payer); own non-shared items count fully; the partner's
-// non-shared items not at all. Quarterly and yearly rules are not smoothed — they count
+// non-shared items not at all. Quarterly, half-yearly and yearly rules are not smoothed — they count
 // (at the person's share) in their due month only.
-// incomeCents  = monthly income rules (own full, shared ½) + quarterly/yearly income rules due
+// incomeCents  = monthly income rules (own full, shared ½) + quarterly/half-yearly/yearly income rules due
 //                this month + one-off income txs (own full, shared ½)
 // fixedCents   = monthly NON-savings expense rules (own non-private full, shared ½)
-// nonMonthlyDueCents = quarterly/yearly NON-savings expense rules due this month (own full incl.
+// nonMonthlyDueCents = quarterly/half-yearly/yearly NON-savings expense rules due this month (own full incl.
 //                  privateExpense, shared ½); individually listed in
 //                  nonMonthlyItems [{id, name, shareCents, interval, shared}]
 // savingsCents = 'sparen' rules (monthly equiv or due this month, own full/shared ½, regardless
@@ -339,7 +340,7 @@ Analysis.detectRecurring(txs, rules, dismissedKeys)
 // candidates: expense txs without recurringId. Group by normalized note (lowercase, trim, collapse
 // spaces; skip txs with empty note) where amounts within ±10% of the group median.
 // Within a group: sort dates, compute day-gaps. Median gap 25–35 → monthly (≥2 occurrences);
-// 80–100 → quarterly (≥2); 330–400 → yearly (≥2). dueDay = median day-of-month clamped 1..28.
+// 80–100 → quarterly (≥2); 170–200 → halfyearly (≥2); 330–400 → yearly (≥2). dueDay = median day-of-month clamped 1..28.
 // key = normalizedNote + '|' + interval. Exclude if key in dismissedKeys, or an existing rule has
 // similar name (normalized equal) or same category with amount within ±10%.
 // -> [{key, name (original note, Title case ok), amountCents (median), category (most frequent),
@@ -360,7 +361,7 @@ Analysis.tips(txs, rules)
 Analysis.icsForRules(rules, members)
 // VCALENDAR string (CRLF line endings) with one VEVENT per ACTIVE rule:
 // DTSTART next due date (today or later), all-day (VALUE=DATE);
-// RRULE monthly: FREQ=MONTHLY;BYMONTHDAY=dueDay — quarterly: FREQ=MONTHLY;INTERVAL=3 — yearly: FREQ=YEARLY
+// RRULE monthly: FREQ=MONTHLY;BYMONTHDAY=dueDay — quarterly: FREQ=MONTHLY;INTERVAL=3 — halfyearly: FREQ=MONTHLY;INTERVAL=6 — yearly: FREQ=YEARLY
 // SUMMARY: '💶 <name> – <amount>' ; DESCRIPTION mentions payer name and category; UID rule.id@unsere-finanzen
 // VALARM DISPLAY, TRIGGER:-PT15H (= 9:00 the day before for all-day events is fine; keep simple: -PT15H)
 ```
@@ -391,7 +392,7 @@ re-renders. Get data only via `Store.*`, compute via `Analysis.*`.
 
 **dashboard.js** — state: selected monthKey (default current). Content top→bottom:
 1. `.month-nav` (‹ chevron buttons › around `App.fmtMonth`; past AND future months are navigable —
-   future months show the plan-based budget incl. quarterly/yearly items due then)
+   future months show the plan-based budget incl. quarterly/half-yearly/yearly items due then)
 2. `.stat-grid` (2×2) 4 `.stat` cards: Einnahmen (green), Ausgaben (red, consumption without
    savings), Gespart (teal, 'sparen' bookings), Übrig (green if ≥0 else red).
    Each tile is tappable (role=button, small `.stat-hint` (i) glyph) and opens an explanation sheet:
@@ -423,10 +424,10 @@ Validate via `App.parseEUR` (invalid → toast 'Bitte gültigen Betrag eingeben'
 **recurring.js** — Content:
 1. Summary card: 'Fixkosten gesamt' `Analysis.fixedMonthlyCents` formatted '/Monat' + per year subline.
 2. Suggestions (if any from `Analysis.detectRecurring`): `.suggestion-card`s '🔍 Erkannt: «name» — X monatlich (n×)' with buttons 'Übernehmen' (creates rule source:'detected', then `Store.dismissSuggestion(key)`) and 'Ignorieren' (dismiss only).
-3. List of rules (active first): `.list-row` with cat icon, name, sub ('monatlich am 1.' / 'vierteljährlich' / 'jährlich im Juni' + '· Name'), trailing amount + small `.switch` for active. Row click → `openEditor(rule)`.
+3. List of rules (active first): `.list-row` with cat icon, name, sub ('monatlich am 1.' / 'vierteljährlich' / 'halbjährlich' / 'jährlich im Juni' + '· Name'), trailing amount + small `.switch` for active. Row click → `openEditor(rule)`.
 4. `.btn-secondary` full width 'Neue Fixkosten anlegen' → `openEditor(null)`.
 `headerAction()` returns calendar icon-btn → ics export: `App.downloadFile('fixkosten.ics', Analysis.icsForRules(...), 'text/calendar')` + toast 'Kalenderdatei erstellt'.
-Export: `Views.recurring.openEditor(ruleOrNull)` — sheet form: name, amount, type segmented, category grid, interval `.segmented` (monatlich/vierteljährlich/jährlich), dueDay select 1..28 ('am 1.' …), for yearly a month select, payer segmented, shared switch, save/delete like transactions editor.
+Export: `Views.recurring.openEditor(ruleOrNull)` — sheet form: name, amount, type segmented, category grid, interval `.segmented` (monatlich/vierteljährlich/halbjährlich/jährlich), dueDay select 1..28 ('am 1.' …), for yearly a month select, payer segmented, shared switch, save/delete like transactions editor.
 
 **insights.js** — Content (not month-navigable; uses current month + history):
 1. Card 'Einnahmen & Ausgaben' — `Charts.bars` with `Analysis.trend(txs, 6, currentMonth)` (two series per group: income green `var via #30D158`, expense red) + legend.

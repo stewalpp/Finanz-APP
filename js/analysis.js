@@ -78,11 +78,17 @@
     return String(s == null ? '' : s).trim().replace(/\s+/g, ' ');
   }
 
-  // Monthly amount of a rule. Quarterly and yearly rules are NEVER smoothed
+  // Monthly amount of a rule. Quarterly, half-yearly and yearly rules are NEVER smoothed
   // over the months — they count as individual items in the months they are
   // actually debited (see availableBudget / personalSummary), so they return 0.
   function monthlyEquivCents(rule) {
     return rule.interval === 'monthly' ? cents(rule.amountCents) : 0;
+  }
+
+  function anchoredIntervalDue(rule, monthKey, intervalMonths) {
+    var anchor = rule.anchorMonth || monthKey;
+    var diff = monthDiff(anchor, monthKey);
+    return diff >= 0 && diff % intervalMonths === 0;
   }
 
   /* ---------- public API ---------- */
@@ -197,7 +203,7 @@
     };
   }
 
-  // Monthly fixed costs: monthly rules only. Quarterly and yearly rules are
+  // Monthly fixed costs: monthly rules only. Quarterly, half-yearly and yearly rules are
   // excluded — they appear as individual items in their due month instead.
   // Savings rules ('sparen') are excluded too: they are wealth building, not costs.
   function fixedMonthlyCents(rules) {
@@ -214,9 +220,10 @@
   function ruleDueInMonth(rule, monthKey) {
     if (rule.interval === 'monthly') return true;
     if (rule.interval === 'quarterly') {
-      var anchor = rule.anchorMonth || monthKey;
-      var diff = monthDiff(anchor, monthKey);
-      return diff >= 0 && diff % 3 === 0;
+      return anchoredIntervalDue(rule, monthKey, 3);
+    }
+    if (rule.interval === 'halfyearly') {
+      return anchoredIntervalDue(rule, monthKey, 6);
     }
     if (rule.interval === 'yearly') {
       var dueMonth = parseInt(rule.dueMonth, 10) || 1;
@@ -269,9 +276,9 @@
 
   // "Frei verfügbar" for a month: a forward-looking, plan-based budget.
   //   plannedIncome = monthly income rules + non-rule income bookings this month
-  //                   + quarterly/yearly income rules due this month
+  //                   + quarterly/half-yearly/yearly income rules due this month
   //   fixed         = active monthly expense rules, savings excluded (= fixedMonthlyCents)
-  //   nonMonthlyDue = quarterly + yearly NON-savings expense rules due in this month, at
+  //   nonMonthlyDue = quarterly + half-yearly + yearly NON-savings expense rules due in this month, at
   //                   full amount; each one is also returned in nonMonthlyItems so the UI
   //                   lists it individually (never smoothed over the other months)
   //   savings       = 'sparen' rules (monthly + those due this month) + non-rule 'sparen'
@@ -408,7 +415,7 @@
 
   // Per-person view ("Persönlich"): that person's income, their fixed costs, their
   // savings and their private expenses for the month. Shared rules and shared bookings
-  // count HALF for each partner, regardless of who pays them. Quarterly and yearly
+  // count HALF for each partner, regardless of who pays them. Quarterly, half-yearly and yearly
   // rules are not smoothed — they count (at the person's share) in their due month
   // only. 'sparen' rules/bookings count under savings (wealth building), never under
   // fixed/private. Recurring private expenses are counted under private expenses
@@ -620,6 +627,7 @@
       var interval = null;
       if (medGap >= 25 && medGap <= 35) interval = 'monthly';
       else if (medGap >= 80 && medGap <= 100) interval = 'quarterly';
+      else if (medGap >= 170 && medGap <= 200) interval = 'halfyearly';
       else if (medGap >= 330 && medGap <= 400) interval = 'yearly';
       if (!interval) return;
 
@@ -866,12 +874,13 @@
       if (iso < todayISO) iso = (year + 1) + '-' + pad2(month) + '-' + pad2(day);
       return iso;
     }
-    if (rule.interval === 'quarterly') {
+    if (rule.interval === 'quarterly' || rule.interval === 'halfyearly') {
+      var step = rule.interval === 'quarterly' ? 3 : 6;
       var mk = rule.anchorMonth || curMonth;
       var diff = monthDiff(mk, curMonth);
-      if (diff > 0) mk = addMonths(mk, Math.ceil(diff / 3) * 3);
+      if (diff > 0) mk = addMonths(mk, Math.ceil(diff / step) * step);
       var qIso = mk + '-' + pad2(day);
-      if (qIso < todayISO) qIso = addMonths(mk, 3) + '-' + pad2(day);
+      if (qIso < todayISO) qIso = addMonths(mk, step) + '-' + pad2(day);
       return qIso;
     }
     // monthly
@@ -913,6 +922,9 @@
       if (rule.interval === 'quarterly') {
         rrule = 'RRULE:FREQ=MONTHLY;INTERVAL=3';
         intervalWord = 'vierteljährlich';
+      } else if (rule.interval === 'halfyearly') {
+        rrule = 'RRULE:FREQ=MONTHLY;INTERVAL=6';
+        intervalWord = 'halbjährlich';
       } else if (rule.interval === 'yearly') {
         rrule = 'RRULE:FREQ=YEARLY';
         intervalWord = 'jährlich';

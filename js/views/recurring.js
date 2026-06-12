@@ -10,6 +10,7 @@
   var INTERVAL_WORDS = {
     monthly: 'monatlich',
     quarterly: 'vierteljährlich',
+    halfyearly: 'halbjährlich',
     yearly: 'jährlich'
   };
 
@@ -27,6 +28,7 @@
 
   function intervalSub(rule) {
     if (rule.interval === 'quarterly') return 'vierteljährlich';
+    if (rule.interval === 'halfyearly') return 'halbjährlich';
     if (rule.interval === 'yearly') {
       var m = Math.min(12, Math.max(1, parseInt(rule.dueMonth, 10) || 1));
       return 'jährlich im ' + MONTH_NAMES[m - 1];
@@ -275,7 +277,7 @@
     var members = getMembers();
     var defType = defaults.type === 'income' ? 'income' : 'expense';
     var defShared = defaults.shared === true;
-    var defInterval = defaults.interval === 'quarterly' || defaults.interval === 'yearly'
+    var defInterval = defaults.interval === 'quarterly' || defaults.interval === 'halfyearly' || defaults.interval === 'yearly'
       ? defaults.interval
       : 'monthly';
     var st = {
@@ -391,6 +393,7 @@
     var intervalDefs = [
       { key: 'monthly', label: 'monatlich' },
       { key: 'quarterly', label: 'vierteljährlich' },
+      { key: 'halfyearly', label: 'halbjährlich' },
       { key: 'yearly', label: 'jährlich' }
     ];
     var intervalSegEls = {};
@@ -405,21 +408,29 @@
           intervalSegEls[t.key].classList.toggle('active', t.key === st.interval);
         });
         monthWrap.style.display = (st.interval === 'yearly') ? '' : 'none';
-        quarterHint.style.display = (st.interval === 'quarterly') ? '' : 'none';
+        updateIntervalHint();
       });
       intervalSegEls[d.key] = seg;
       segInterval.appendChild(seg);
     });
     intervalGroup.appendChild(segInterval);
-    // quarterly cycle is anchored at the rule's anchor month — make that visible
+    // quarterly/half-yearly cycles are anchored at the rule's anchor month — make that visible
     var anchorKey = isEdit && rule.anchorMonth ? rule.anchorMonth : App.monthKey(App.todayISO());
-    var quarterHint = App.el('div', 'form-label',
-      'Alle 3 Monate, beginnend im ' + App.fmtMonth(anchorKey) +
-      ' (also auch ' + App.fmtMonth(App.addMonths(anchorKey, 3)) + ', ' +
-      App.fmtMonth(App.addMonths(anchorKey, 6)) + ' …).');
-    quarterHint.style.margin = '6px 0 0';
-    quarterHint.style.display = (st.interval === 'quarterly') ? '' : 'none';
-    intervalGroup.appendChild(quarterHint);
+    var intervalHint = App.el('div', 'form-label', '');
+    intervalHint.style.margin = '6px 0 0';
+    function updateIntervalHint() {
+      if (st.interval !== 'quarterly' && st.interval !== 'halfyearly') {
+        intervalHint.style.display = 'none';
+        return;
+      }
+      var step = st.interval === 'quarterly' ? 3 : 6;
+      intervalHint.textContent = 'Alle ' + step + ' Monate, beginnend im ' + App.fmtMonth(anchorKey) +
+        ' (also auch ' + App.fmtMonth(App.addMonths(anchorKey, step)) + ', ' +
+        App.fmtMonth(App.addMonths(anchorKey, step * 2)) + ' …).';
+      intervalHint.style.display = '';
+    }
+    updateIntervalHint();
+    intervalGroup.appendChild(intervalHint);
     content.appendChild(intervalGroup);
 
     // --- due day + month (month only for yearly) ---
