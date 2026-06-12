@@ -1,7 +1,7 @@
 /* Service worker for "Unsere Finanzen" — precache app shell, stale-while-revalidate. */
 'use strict';
 
-const CACHE = 'unsere-finanzen-v33';
+const CACHE = 'unsere-finanzen-v34';
 
 const PRECACHE = [
   './',
@@ -9,6 +9,7 @@ const PRECACHE = [
   'css/style.css',
   'manifest.json',
   'js/core.js',
+  'js/icons.js',
   'js/charts.js',
   'js/analysis.js',
   'js/store.js',
@@ -28,7 +29,10 @@ const FIREBASE_CDN_PREFIX = 'https://www.gstatic.com/firebasejs/';
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
+      // cache: 'reload' bypasses the browser's HTTP cache, so a new service
+      // worker version always installs fresh files — never heuristically
+      // stale copies.
+      .then((cache) => cache.addAll(PRECACHE.map((url) => new Request(url, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });

@@ -75,11 +75,12 @@
   function showOnboarding() {
     var content = App.el('div', '');
 
-    var hello = App.el('p', '', '👋');
-    hello.style.fontSize = '40px';
+    var hello = App.el('p', '');
     hello.style.textAlign = 'center';
     hello.style.margin = '4px 0 10px';
+    hello.style.color = 'var(--tint)';
     hello.setAttribute('aria-hidden', 'true');
+    hello.appendChild(App.icon('handshake', 40));
     content.appendChild(hello);
 
     var intro = App.el('p', '',

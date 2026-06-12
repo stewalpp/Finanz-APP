@@ -8,11 +8,7 @@
 
   // module-level state (persists across re-renders)
   var selectedPerson = 'p1';   // 'p1' | 'p2'
-  var selectedMonth = null;    // 'YYYY-MM'; lazily set to current month
-
-  function currentMonthKey() {
-    return App.monthKey(App.todayISO());
-  }
+  var selectedMonth = null;    // 'YYYY-MM'; synced via App.getMonth()/setMonth()
 
   function personName(id) {
     return App.memberName(id) || (id === 'p1' ? 'Partner 1' : 'Partner 2');
@@ -61,6 +57,7 @@
     prev.appendChild(chevron('left'));
     prev.addEventListener('click', function () {
       selectedMonth = App.addMonths(selectedMonth, -1);
+      App.setMonth(selectedMonth);
       App.rerender();
     });
 
@@ -73,6 +70,7 @@
     // future months are allowed: shows upcoming due items per person
     next.addEventListener('click', function () {
       selectedMonth = App.addMonths(selectedMonth, 1);
+      App.setMonth(selectedMonth);
       App.rerender();
     });
 
@@ -204,9 +202,14 @@
       card.appendChild(summaryLine('Diesen Monat zusätzlich fällig', sum.nonMonthlyDueCents, '−', 'neg'));
       sum.nonMonthlyItems.forEach(function (item) {
         var word = item.interval === 'quarterly' ? 'vierteljährlich' : 'jährlich';
-        var row = App.el('div', 'row-sub',
-          '📅 ' + item.name + (item.shared ? ' (½ gemeinsam)' : ' (privat)') + ' · ' + word + ' · ' + App.fmtEUR(item.shareCents));
+        var row = App.el('div', 'row-sub');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '4px';
         row.style.padding = '0 0 4px 12px';
+        row.appendChild(App.icon('calendar-days', 12));
+        row.appendChild(document.createTextNode(
+          item.name + (item.shared ? ' (½ gemeinsam)' : ' (privat)') + ' · ' + word + ' · ' + App.fmtEUR(item.shareCents)));
         card.appendChild(row);
       });
     }
@@ -231,8 +234,7 @@
     var row = App.el('div', 'list-row');
     row.setAttribute('role', 'button');
 
-    var icon = App.el('div', 'cat-icon', cat.emoji);
-    icon.style.background = cat.color + '2E';
+    var icon = App.catIcon(tx.category);
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', tx.note || cat.label));
@@ -258,18 +260,23 @@
     var row = App.el('div', 'list-row');
     row.setAttribute('role', 'button');
 
-    var icon = App.el('div', 'cat-icon', cat.emoji);
-    icon.style.background = cat.color + '2E';
+    var icon = App.catIcon(rule.category);
 
     var word = rule.interval === 'quarterly' ? 'vierteljährlich'
       : rule.interval === 'yearly' ? 'jährlich' : 'monatlich';
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', rule.name || cat.label));
-    main.appendChild(App.el('div', 'row-sub', '↻ ' + word + ' · ' + cat.label +
+    var sub = App.el('div', 'row-sub');
+    sub.style.display = 'flex';
+    sub.style.alignItems = 'center';
+    sub.style.gap = '4px';
+    sub.appendChild(App.icon('repeat', 12));
+    sub.appendChild(document.createTextNode(word + ' · ' + cat.label +
       (rule.shared === true
         ? ' · Gemeinsam (zählt ½) · zahlt ' + (personName(rule.payerId))
         : (rule.type === 'expense' ? ' · Privat' : ''))));
+    main.appendChild(sub);
 
     var trailing = App.el('div', 'row-trailing');
     var isIncome = rule.type === 'income';
@@ -287,15 +294,17 @@
 
   function txSwipeRow(tx) {
     return App.swipeToDelete(txRow(tx), function () {
-      Store.deleteTransaction(tx.id);
-      App.toast('Buchung gelöscht');
+      var removed = Store.deleteTransaction(tx.id);
+      App.toast('Buchung gelöscht', removed ? { actionText: 'Rückgängig', onAction: function () {
+        Store.restoreTransaction(removed); App.toast('Wiederhergestellt ✓'); } } : undefined);
     }, { ariaLabel: 'Buchung löschen' });
   }
 
   function ruleSwipeRow(rule) {
     return App.swipeToDelete(ruleRow(rule), function () {
-      Store.deleteRecurring(rule.id);
-      App.toast('Eintrag gelöscht');
+      var removed = Store.deleteRecurring(rule.id);
+      App.toast('Eintrag gelöscht', removed ? { actionText: 'Rückgängig', onAction: function () {
+        Store.restoreRecurring(removed); App.toast('Wiederhergestellt ✓'); } } : undefined);
     }, { ariaLabel: 'Regel löschen' });
   }
 
@@ -332,7 +341,7 @@
   }
 
   function render(root) {
-    if (!selectedMonth) selectedMonth = currentMonthKey();
+    selectedMonth = App.getMonth(); // shared across tabs — pick up switches made elsewhere
 
     root.innerHTML = '';
     var view = App.el('div', 'view');

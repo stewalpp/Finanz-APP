@@ -14,10 +14,6 @@
   // ---------------------------------------------------------------------------
   // Small helpers
   // ---------------------------------------------------------------------------
-  function currentMonthKey() {
-    return App.monthKey(App.todayISO());
-  }
-
   // Static markup only — never user content.
   function chevron(dir) {
     const span = document.createElement('span');
@@ -28,12 +24,12 @@
     return span.firstChild;
   }
 
-  function emptyState(emoji, text) {
+  function emptyState(iconName, text) {
     const box = App.el('div', 'empty-state');
-    const em = App.el('div', '', emoji);
-    em.style.fontSize = '40px';
-    em.style.marginBottom = '8px';
-    box.appendChild(em);
+    const iconWrap = App.el('div');
+    iconWrap.style.marginBottom = '8px';
+    iconWrap.appendChild(App.icon(iconName, 40));
+    box.appendChild(iconWrap);
     box.appendChild(App.el('div', '', text));
     return box;
   }
@@ -59,6 +55,7 @@
     prev.appendChild(chevron('left'));
     prev.addEventListener('click', function () {
       selectedMonth = App.addMonths(selectedMonth, -1);
+      App.setMonth(selectedMonth);
       App.rerender();
     });
 
@@ -71,6 +68,7 @@
     // future months are allowed: the plan-based budget shows what will be due
     next.addEventListener('click', function () {
       selectedMonth = App.addMonths(selectedMonth, 1);
+      App.setMonth(selectedMonth);
       App.rerender();
     });
 
@@ -139,7 +137,7 @@
     grid.appendChild(statCard('Ausgaben', summary.expenseCents, 'neg', function () {
       const catBlocks = summary.byCategory.map(function (c) {
         const cat = App.cat(c.category);
-        return { row: [cat.emoji + ' ' + cat.label, '−' + App.fmtEUR(c.cents), 'neg'] };
+        return { row: [cat.label, '−' + App.fmtEUR(c.cents), 'neg'] };
       });
       return App.infoContent([].concat(
         catBlocks,
@@ -304,13 +302,9 @@
     name.style.color = memberColor(pid);
     head.appendChild(name);
 
+    // no amount next to the name — it would duplicate the "Bleibt" row below
     const spent = sum.fixedCents + sum.privateRecurringCents + sum.nonMonthlyDueCents +
       sum.privateSpentCents + sum.sharedVariableCents;
-    const leftEl = App.el('div', sum.leftoverCents >= 0 ? 'amount-pos' : 'amount-neg',
-      App.fmtEUR(sum.leftoverCents));
-    leftEl.style.fontWeight = '700';
-    leftEl.style.fontSize = '17px';
-    head.appendChild(leftEl);
     wrap.appendChild(head);
 
     const rows = App.el('div');
@@ -401,12 +395,10 @@
 
   function upcomingRow(item) {
     const rule = item.rule;
-    const cat = App.cat(rule.category);
 
     const row = App.el('div', 'list-row');
 
-    const icon = App.el('div', 'cat-icon', cat.emoji);
-    icon.style.background = cat.color + '2E';
+    const icon = App.catIcon(rule.category);
 
     const main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', rule.name));
@@ -526,7 +518,7 @@
     const summary = Analysis.monthlySummary(sharedTxs, selectedMonth);
 
     if (!appendDonut(card, summary, 'Gemeinsam')) {
-      card.appendChild(emptyState('🤝', 'Keine gemeinsamen Ausgaben in diesem Monat.'));
+      card.appendChild(emptyState('handshake', 'Keine gemeinsamen Ausgaben in diesem Monat.'));
     }
     return card;
   }
@@ -575,7 +567,7 @@
       note.style.marginTop = '8px';
       card.appendChild(note);
     } else {
-      card.appendChild(emptyState('🪙', 'Keine Ausgaben von ' +
+      card.appendChild(emptyState('coins', 'Keine Ausgaben von ' +
         (App.memberName(chartPerson) || 'dieser Person') + ' in diesem Monat.'));
     }
     return card;
@@ -587,7 +579,7 @@
 
     const summary = expenseCategorySummary(txs, selectedMonth);
     if (!appendDonut(card, summary, 'Ausgaben')) {
-      card.appendChild(emptyState('🪙', 'Keine Ausgaben in diesem Monat.'));
+      card.appendChild(emptyState('chart-pie', 'Keine Ausgaben in diesem Monat.'));
     }
     return card;
   }
@@ -599,8 +591,7 @@
     const cat = App.cat(tx.category);
     const row = App.el('div', 'list-row');
 
-    const icon = App.el('div', 'cat-icon', cat.emoji);
-    icon.style.background = cat.color + '2E';
+    const icon = App.catIcon(tx.category);
 
     const main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', tx.note ? tx.note : cat.label));
@@ -629,7 +620,7 @@
     });
 
     if (!monthTxs.length) {
-      card.appendChild(emptyState('🧾', 'Keine Buchungen in diesem Monat.'));
+      card.appendChild(emptyState('receipt-text', 'Keine Buchungen in diesem Monat.'));
     } else {
       monthTxs.slice(0, 5).forEach(function (tx) {
         card.appendChild(txRow(tx));
@@ -662,8 +653,13 @@
 
     suggestions.slice(0, 3).forEach(function (s) {
       const item = App.el('div', 'suggestion-card');
-      const title = App.el('div', '', '🔍 ' + s.name);
+      const title = App.el('div');
+      title.style.display = 'flex';
+      title.style.alignItems = 'center';
+      title.style.gap = '6px';
       title.style.fontWeight = '600';
+      title.appendChild(App.icon('search', 18));
+      title.appendChild(App.el('span', '', s.name));
       item.appendChild(title);
       item.appendChild(App.el('div', 'row-sub',
         App.fmtEUR(s.amountCents) + ' ' + (INTERVAL_WORDS[s.interval] || s.interval) + ' (' + s.count + '×)'));
@@ -698,7 +694,7 @@
   // Render
   // ---------------------------------------------------------------------------
   function render(root) {
-    if (!selectedMonth) selectedMonth = currentMonthKey();
+    selectedMonth = App.getMonth(); // shared across tabs — pick up switches made elsewhere
 
     root.innerHTML = '';
     const view = App.el('div', 'view');

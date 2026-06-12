@@ -123,6 +123,22 @@
     return (y + carry) + '-' + pad2(m0 - carry * 12 + 1);
   };
 
+  /* ---------------- shared month selection (all tabs follow) ---------------- */
+
+  // The viewed month ('YYYY-MM') is global UI state: switching it in one tab
+  // must carry over to Übersicht, Persönlich and Buchungen alike.
+  var uiMonth = null; // session-only — every app start begins at the current month
+
+  App.getMonth = function () {
+    if (!uiMonth) uiMonth = App.monthKey(App.todayISO());
+    return uiMonth;
+  };
+
+  App.setMonth = function (monthKey) {
+    var s = String(monthKey || '').slice(0, 7);
+    if (/^\d{4}-\d{2}$/.test(s)) uiMonth = s;
+  };
+
   App.uid = function () {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') {
       return window.crypto.randomUUID();
@@ -356,26 +372,26 @@
   /* ---------------- categories ---------------- */
 
   App.CATEGORIES = {
-    gehalt:       { label: 'Gehalt',                emoji: '💼',  color: '#30D158', type: 'income' },
-    einnahme:     { label: 'Sonstige Einnahme',     emoji: '💶',  color: '#66D4CF', type: 'income' },
-    lebensmittel: { label: 'Lebensmittel',          emoji: '🛒',  color: '#34C759', type: 'expense' },
-    restaurant:   { label: 'Restaurant & Café',     emoji: '🍽️', color: '#FF9F0A', type: 'expense' },
-    wohnen:       { label: 'Miete & Wohnen',        emoji: '🏠',  color: '#0A84FF', type: 'expense' },
-    nebenkosten:  { label: 'Strom, Gas & Wasser',   emoji: '💡',  color: '#FFD60A', type: 'expense' },
-    internet:     { label: 'Internet & Handy',      emoji: '📶',  color: '#64D2FF', type: 'expense' },
-    versicherung: { label: 'Versicherungen',        emoji: '🛡️', color: '#5E5CE6', type: 'expense' },
-    transport:    { label: 'Auto & Transport',      emoji: '🚗',  color: '#BF5AF2', type: 'expense' },
-    abos:         { label: 'Abos & Streaming',      emoji: '📺',  color: '#FF453A', type: 'expense' },
-    gesundheit:   { label: 'Gesundheit & Drogerie', emoji: '💊',  color: '#FF375F', type: 'expense' },
-    kleidung:     { label: 'Kleidung',              emoji: '👕',  color: '#AC8E68', type: 'expense' },
-    freizeit:     { label: 'Freizeit & Sport',      emoji: '🎾',  color: '#63E6E2', type: 'expense' },
-    urlaub:       { label: 'Urlaub & Reisen',       emoji: '✈️',  color: '#40C8E0', type: 'expense' },
-    geschenke:    { label: 'Geschenke',             emoji: '🎁',  color: '#FF6482', type: 'expense' },
-    haushalt:     { label: 'Haushalt & Möbel',      emoji: '🛋️', color: '#98989D', type: 'expense' },
-    sparen:       { label: 'Sparen & Anlegen',      emoji: '🏦',  color: '#00C7BE', type: 'expense' },
-    kredite:      { label: 'Kredite',               emoji: '💳',  color: '#C76E5A', type: 'expense' },
-    ausgleich:    { label: 'Ausgleich',             emoji: '🤝',  color: '#8E8E93', type: 'expense' },
-    sonstiges:    { label: 'Sonstiges',             emoji: '📦',  color: '#8E8E93', type: 'expense' }
+    gehalt:       { label: 'Gehalt',                emoji: '💼',  icon: 'briefcase-business', color: '#30D158', type: 'income' },
+    einnahme:     { label: 'Sonstige Einnahme',     emoji: '💶',  icon: 'hand-coins',         color: '#66D4CF', type: 'income' },
+    lebensmittel: { label: 'Lebensmittel',          emoji: '🛒',  icon: 'shopping-cart',      color: '#34C759', type: 'expense' },
+    restaurant:   { label: 'Restaurant & Café',     emoji: '🍽️', icon: 'utensils-crossed',   color: '#FF9F0A', type: 'expense' },
+    wohnen:       { label: 'Miete & Wohnen',        emoji: '🏠',  icon: 'house',              color: '#0A84FF', type: 'expense' },
+    nebenkosten:  { label: 'Strom, Gas & Wasser',   emoji: '💡',  icon: 'lightbulb',          color: '#FFD60A', type: 'expense' },
+    internet:     { label: 'Internet & Handy',      emoji: '📶',  icon: 'wifi',               color: '#64D2FF', type: 'expense' },
+    versicherung: { label: 'Versicherungen',        emoji: '🛡️', icon: 'shield-check',       color: '#5E5CE6', type: 'expense' },
+    transport:    { label: 'Auto & Transport',      emoji: '🚗',  icon: 'car-front',          color: '#BF5AF2', type: 'expense' },
+    abos:         { label: 'Abos & Streaming',      emoji: '📺',  icon: 'tv',                 color: '#FF453A', type: 'expense' },
+    gesundheit:   { label: 'Gesundheit & Drogerie', emoji: '💊',  icon: 'pill',               color: '#FF375F', type: 'expense' },
+    kleidung:     { label: 'Kleidung',              emoji: '👕',  icon: 'shirt',              color: '#AC8E68', type: 'expense' },
+    freizeit:     { label: 'Freizeit & Sport',      emoji: '🎾',  icon: 'dumbbell',           color: '#63E6E2', type: 'expense' },
+    urlaub:       { label: 'Urlaub & Reisen',       emoji: '✈️',  icon: 'plane',              color: '#40C8E0', type: 'expense' },
+    geschenke:    { label: 'Geschenke',             emoji: '🎁',  icon: 'gift',               color: '#FF6482', type: 'expense' },
+    haushalt:     { label: 'Haushalt & Möbel',      emoji: '🛋️', icon: 'sofa',               color: '#98989D', type: 'expense' },
+    sparen:       { label: 'Sparen & Anlegen',      emoji: '🏦',  icon: 'piggy-bank',         color: '#00C7BE', type: 'expense' },
+    kredite:      { label: 'Kredite',               emoji: '💳',  icon: 'credit-card',        color: '#C76E5A', type: 'expense' },
+    ausgleich:    { label: 'Ausgleich',             emoji: '🤝',  icon: 'handshake',          color: '#8E8E93', type: 'expense' },
+    sonstiges:    { label: 'Sonstiges',             emoji: '📦',  icon: 'package',            color: '#8E8E93', type: 'expense' }
   };
 
   // 'expense' -> all non-income except 'ausgleich'; 'income' -> income entries plus 'sonstiges'
@@ -386,7 +402,7 @@
       var include = type === 'income'
         ? (c.type === 'income' || key === 'sonstiges')
         : (c.type !== 'income' && key !== 'ausgleich');
-      if (include) out.push({ key: key, label: c.label, emoji: c.emoji, color: c.color });
+      if (include) out.push({ key: key, label: c.label, emoji: c.emoji, icon: c.icon, color: c.color });
     });
     return out;
   };
@@ -468,10 +484,10 @@
       if (dy > 110) {
         App.closeSheet();                         // continues the slide-down from here
       } else {
-        sheet.style.transition = 'transform 0.32s cubic-bezier(0.32,0.72,0,1)';
+        sheet.style.transition = 'transform 0.5s var(--spring)';
         sheet.style.transform = 'translateY(0)';
         if (sheetState.backdrop) {
-          sheetState.backdrop.style.transition = 'opacity 0.2s ease';
+          sheetState.backdrop.style.transition = 'opacity 0.2s var(--ease-linear)';
           sheetState.backdrop.style.opacity = '';
         }
       }
@@ -528,18 +544,28 @@
     var backdrop = sheetState.backdrop;
     if (!sheetState.open || !sheet) { teardownSheet(); return; }
     var gen = ++sheetState.gen;
-    sheet.style.transition = 'transform 0.28s cubic-bezier(0.4, 0, 0.6, 1)';
+    sheet.style.transition = 'transform 0.3s var(--ease-in)';
     sheet.style.transform = 'translateY(100%)';
     if (backdrop) {
-      backdrop.style.transition = 'opacity 0.28s ease';
+      backdrop.style.transition = 'opacity 0.3s var(--ease-linear)';
       backdrop.style.opacity = '0';
     }
-    setTimeout(function () { if (sheetState.gen === gen) teardownSheet(); }, 300);
+    setTimeout(function () { if (sheetState.gen === gen) teardownSheet(); }, 320);
   };
 
   /* ---------------- confirm alert (iOS style) ---------------- */
 
   var alertCancelStack = [];
+
+  // Animated dismissal (HIG EaseIn): backdrop fades linearly, the box scales
+  // down and accelerates away; the node is removed once the curve has run.
+  function dismissAlert(backdrop) {
+    if (!backdrop.parentNode || backdrop.classList.contains('closing')) return;
+    backdrop.classList.add('closing');
+    setTimeout(function () {
+      if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+    }, 220);
+  }
 
   // {title, message, confirmText='OK', destructive=false} -> Promise<boolean>
   App.confirm = function (opts) {
@@ -562,7 +588,7 @@
       function settle(value) {
         var idx = alertCancelStack.indexOf(cancel);
         if (idx !== -1) alertCancelStack.splice(idx, 1);
-        if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+        dismissAlert(backdrop);
         resolve(value);
       }
       function cancel() { settle(false); }
@@ -582,6 +608,34 @@
     });
   };
 
+  /* ---------------- on-screen keyboard ---------------- */
+
+  // While the keyboard is up, the fixed bottom chrome (tab bar, FAB) must
+  // hide: iOS pins position:fixed to the layout viewport, so it would
+  // visibly drift along when scrolling behind an open keyboard.
+  function opensKeyboard(el) {
+    if (!el || !el.tagName) return false;
+    var tag = el.tagName.toUpperCase();
+    if (tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (tag !== 'INPUT') return false;
+    var t = (el.type || 'text').toLowerCase();
+    return t !== 'checkbox' && t !== 'radio' && t !== 'button' &&
+           t !== 'submit' && t !== 'range' && t !== 'file' && t !== 'color';
+  }
+
+  document.addEventListener('focusin', function (e) {
+    if (opensKeyboard(e.target)) document.documentElement.classList.add('kb-open');
+  });
+
+  document.addEventListener('focusout', function () {
+    // wait a beat: focus may just be moving to the next field
+    setTimeout(function () {
+      if (!opensKeyboard(document.activeElement)) {
+        document.documentElement.classList.remove('kb-open');
+      }
+    }, 60);
+  });
+
   // Escape closes the topmost alert first, then an open sheet
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
@@ -597,7 +651,11 @@
   var toastTimer = null;
   var toastNode = null;
 
-  App.toast = function (message) {
+  // App.toast('Nachricht') — short status toast (2,2s).
+  // App.toast('Nachricht', { actionText: 'Rückgängig', onAction: fn, duration? })
+  // — toast with a tappable action; stays 6s so the user can react.
+  App.toast = function (message, opts) {
+    opts = opts || {};
     var root = document.getElementById('toast-root');
     if (!root) return;
     if (toastTimer) {
@@ -606,20 +664,36 @@
     }
     if (toastNode && toastNode.parentNode) toastNode.parentNode.removeChild(toastNode);
 
-    var node = App.el('div', 'toast', String(message == null ? '' : message));
+    var node = App.el('div', 'toast');
     node.setAttribute('role', 'status');
+    node.appendChild(App.el('span', 'toast-text', String(message == null ? '' : message)));
+
+    var hasAction = opts.actionText && typeof opts.onAction === 'function';
+    if (hasAction) {
+      node.classList.add('has-action');
+      var btn = App.el('button', 'toast-action', opts.actionText);
+      btn.type = 'button';
+      btn.addEventListener('click', function () {
+        if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+        if (node.parentNode) node.parentNode.removeChild(node);
+        if (toastNode === node) toastNode = null;
+        try { opts.onAction(); } catch (err) { console.error(err); }
+      });
+      node.appendChild(btn);
+    }
+
     root.appendChild(node);
     toastNode = node;
 
     toastTimer = setTimeout(function () {
-      node.style.transition = 'opacity 0.25s ease';
+      node.style.transition = 'opacity 0.25s var(--ease-in)';
       node.style.opacity = '0';
       toastTimer = setTimeout(function () {
         if (node.parentNode) node.parentNode.removeChild(node);
         if (toastNode === node) toastNode = null;
         toastTimer = null;
       }, 260);
-    }, 2200);
+    }, opts.duration || (hasAction ? 6000 : 2200));
   };
 
 })();

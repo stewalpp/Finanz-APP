@@ -13,14 +13,6 @@
     yearly: 'jährlich'
   };
 
-  var SVG_CALENDAR =
-    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<rect x="3" y="4" width="18" height="18" rx="2"></rect>' +
-    '<line x1="16" y1="2" x2="16" y2="6"></line>' +
-    '<line x1="8" y1="2" x2="8" y2="6"></line>' +
-    '<line x1="3" y1="10" x2="21" y2="10"></line></svg>';
-
   function centsToInput(cents) {
     return (cents / 100).toFixed(2).replace('.', ',');
   }
@@ -119,8 +111,13 @@
   function buildSuggestionCard(s) {
     var card = App.el('div', 'suggestion-card');
 
-    var title = App.el('div', '', '🔍 Erkannt: ' + s.name);
+    var title = App.el('div', '');
+    title.style.display = 'flex';
+    title.style.alignItems = 'center';
+    title.style.gap = '6px';
     title.style.fontWeight = '600';
+    title.appendChild(App.icon('search', 18));
+    title.appendChild(App.el('span', '', 'Erkannt: ' + s.name));
     card.appendChild(title);
 
     var word = INTERVAL_WORDS[s.interval] || s.interval;
@@ -172,10 +169,9 @@
 
     if (!rules.length) {
       var empty = App.el('div', 'empty-state');
-      var em = App.el('span', '', '📅');
-      em.style.fontSize = '40px';
-      em.style.display = 'block';
-      empty.appendChild(em);
+      var emptyIcon = App.el('div', '');
+      emptyIcon.appendChild(App.icon('calendar-days', 40));
+      empty.appendChild(emptyIcon);
       empty.appendChild(App.el('p', '',
         'Noch keine Fixkosten angelegt. Lege Miete, Strom oder Abos als Regel an – ' +
         'dann erinnert dich die App jeden Monat daran.'));
@@ -197,8 +193,7 @@
     var row = App.el('div', 'list-row');
     row.setAttribute('role', 'button');
 
-    var icon = App.el('div', 'cat-icon', cat.emoji);
-    icon.style.background = cat.color + '2E';
+    var icon = App.catIcon(rule.category);
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', rule.name || cat.label));
@@ -255,7 +250,7 @@
     var btn = App.el('button', 'icon-btn');
     btn.type = 'button';
     btn.setAttribute('aria-label', 'Fixkosten als Kalender exportieren');
-    btn.innerHTML = SVG_CALENDAR;
+    btn.appendChild(App.icon('calendar-days', 20));
     btn.addEventListener('click', function () {
       var rules = Store.getRecurring();
       var hasActive = rules.some(function (r) { return r.active; });
@@ -364,8 +359,9 @@
       App.catList(st.type).forEach(function (c) {
         var chip = App.el('button', 'cat-chip');
         chip.type = 'button';
-        var em = App.el('span', '', c.emoji);
-        em.style.fontSize = '20px';
+        var em = App.el('span', '');
+        em.style.color = c.color;
+        em.appendChild(App.icon(c.icon, 22));
         chip.appendChild(em);
         chip.appendChild(App.el('span', '', c.label));
         if (c.key === st.category) chip.classList.add('active');
@@ -577,9 +573,15 @@
           destructive: true
         }).then(function (ok) {
           if (!ok) return;
-          Store.deleteRecurring(rule.id);
+          var removed = Store.deleteRecurring(rule.id);
           App.closeSheet();
-          App.toast('Gelöscht');
+          App.toast('Gelöscht', removed ? {
+            actionText: 'Rückgängig',
+            onAction: function () {
+              Store.restoreRecurring(removed);
+              App.toast('Wiederhergestellt ✓');
+            }
+          } : undefined);
         });
       });
       content.appendChild(delBtn);

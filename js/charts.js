@@ -17,10 +17,10 @@
     style.id = STYLE_ID;
     style.textContent = [
       '.cf-donut{display:block;margin:4px auto 8px;}',
-      '.cf-donut .cf-arc{animation:cf-arc-in .7s cubic-bezier(.33,0,.2,1) both;}',
+      '.cf-donut .cf-arc{animation:cf-arc-in .7s var(--ease-out) both;}',
       '@keyframes cf-arc-in{from{stroke-dasharray:0 var(--cf-circ);opacity:.25;}}',
       '.cf-bars{display:block;width:100%;height:auto;}',
-      '.cf-bars .cf-bar{animation:cf-bar-in .45s ease-out both;}',
+      '.cf-bars .cf-bar{animation:cf-bar-in .45s var(--ease-out) both;}',
       '@keyframes cf-bar-in{from{opacity:0;}}',
       '@media (prefers-reduced-motion:reduce){',
       '.cf-donut .cf-arc,.cf-bars .cf-bar{animation:none;}',

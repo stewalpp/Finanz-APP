@@ -569,13 +569,29 @@
     return Object.assign({}, merged);
   }
 
+  // Returns a copy of the removed transaction so callers can offer undo.
   function deleteTransaction(id) {
-    const before = transactions.length;
-    transactions = transactions.filter((t) => t.id !== id);
-    if (transactions.length === before) return;
+    const idx = transactions.findIndex((t) => t.id === id);
+    if (idx === -1) return null;
+    const removed = transactions[idx];
+    transactions.splice(idx, 1);
     persistTx();
     cloudDeleteTx(id);
     emit();
+    return Object.assign({}, removed);
+  }
+
+  // Undo: re-insert a previously deleted transaction unchanged (same id,
+  // so the cloud document is recreated under its original key).
+  function restoreTransaction(tx) {
+    if (!tx || !tx.id) return null;
+    if (transactions.some((t) => t.id === tx.id)) return null;
+    const restored = normalizeTx(scrub(tx));
+    transactions.push(restored);
+    persistTx();
+    cloudSetTx(restored);
+    emit();
+    return Object.assign({}, restored);
   }
 
   // -------- recurring rules
@@ -619,13 +635,28 @@
     return Object.assign({}, merged);
   }
 
+  // Returns a copy of the removed rule so callers can offer undo.
   function deleteRecurring(id) {
-    const before = rules.length;
-    rules = rules.filter((r) => r.id !== id);
-    if (rules.length === before) return;
+    const idx = rules.findIndex((r) => r.id === id);
+    if (idx === -1) return null;
+    const removed = rules[idx];
+    rules.splice(idx, 1);
     persistRules();
     cloudDeleteRule(id);
     emit();
+    return Object.assign({}, removed);
+  }
+
+  // Undo: re-insert a previously deleted rule unchanged (same id).
+  function restoreRecurring(rule) {
+    if (!rule || !rule.id) return null;
+    if (rules.some((r) => r.id === rule.id)) return null;
+    const restored = normalizeRule(scrub(rule));
+    rules.push(restored);
+    persistRules();
+    cloudSetRule(restored);
+    emit();
+    return Object.assign({}, restored);
   }
 
   // -------- settings
@@ -801,10 +832,12 @@
     addTransaction: addTransaction,
     updateTransaction: updateTransaction,
     deleteTransaction: deleteTransaction,
+    restoreTransaction: restoreTransaction,
     getRecurring: getRecurring,
     addRecurring: addRecurring,
     updateRecurring: updateRecurring,
     deleteRecurring: deleteRecurring,
+    restoreRecurring: restoreRecurring,
     getSettings: getSettings,
     updateSettings: updateSettings,
     getDismissed: getDismissed,

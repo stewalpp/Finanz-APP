@@ -7,8 +7,7 @@
   // ---- module-level state (persists across re-renders) ----
   // Buchungen ist ein reines Monatsjournal: nur echte Buchungen, keine offenen Regeln.
   var state = {
-    month: null,       // 'YYYY-MM' — lazily initialized to current month
-    search: ''
+    month: null        // 'YYYY-MM' — lazily initialized to current month
   };
 
   var SVG_CHEVRON_LEFT =
@@ -21,7 +20,7 @@
     '<polyline points="9 18 15 12 9 6"></polyline></svg>';
 
   function ensureMonth() {
-    if (!state.month) state.month = App.monthKey(App.todayISO());
+    state.month = App.getMonth(); // shared across tabs — pick up switches made elsewhere
   }
 
   function centsToInput(cents) {
@@ -54,7 +53,6 @@
     var listWrap = App.el('div', '');
 
     view.appendChild(buildMonthNav(root));
-    view.appendChild(buildSearchbar(listWrap));
     view.appendChild(listWrap);
     renderList(listWrap);
 
@@ -69,7 +67,7 @@
     prev.setAttribute('aria-label', 'Vorheriger Monat');
     prev.innerHTML = SVG_CHEVRON_LEFT;
     prev.addEventListener('click', function () {
-      state.month = App.addMonths(state.month, -1);
+      App.setMonth(App.addMonths(state.month, -1));
       render(root);
     });
 
@@ -80,7 +78,7 @@
     next.setAttribute('aria-label', 'Nächster Monat');
     next.innerHTML = SVG_CHEVRON_RIGHT;
     next.addEventListener('click', function () {
-      state.month = App.addMonths(state.month, 1);
+      App.setMonth(App.addMonths(state.month, 1));
       render(root);
     });
 
@@ -88,22 +86,6 @@
     nav.appendChild(title);
     nav.appendChild(next);
     return nav;
-  }
-
-  function buildSearchbar(listWrap) {
-    var bar = App.el('div', 'searchbar');
-    var input = document.createElement('input');
-    input.type = 'search';
-    input.placeholder = 'Suchen…';
-    input.autocomplete = 'off';
-    input.value = state.search;
-    input.setAttribute('aria-label', 'Buchungen durchsuchen');
-    input.addEventListener('input', function () {
-      state.search = input.value;
-      renderList(listWrap);
-    });
-    bar.appendChild(input);
-    return bar;
   }
 
   // ------------------------------------------------------------------ list
@@ -118,23 +100,11 @@
   }
 
   function getLedgerEntries() {
-    var q = state.search.trim().toLowerCase();
     var txs = Store.getTransactions();
     var entries = [];
 
     txs.forEach(function (tx) {
       if (App.monthKey(tx.date) !== state.month) return;
-      if (q) {
-        var cat = App.cat(tx.category);
-        var txHay = [
-          tx.note || '',
-          cat.label,
-          App.memberName(tx.payerId),
-          tx.shared === true ? 'gemeinsam geteilt' : 'privat',
-          tx.type === 'income' ? 'einnahme' : 'ausgabe'
-        ].join(' ').toLowerCase();
-        if (txHay.indexOf(q) === -1) return;
-      }
       entries.push({ kind: 'tx', item: tx });
     });
 
@@ -151,7 +121,7 @@
     return entries;
   }
 
-  // Live total card — always visible, recomputed on every render/search/data change.
+  // Live total card — always visible, recomputed on every render/data change.
   function buildTotalCard(entries) {
     var expenseSum = 0;
     var incomeSum = 0;
@@ -188,15 +158,11 @@
     wrap.appendChild(buildTotalCard(entries));
 
     if (!entries.length) {
-      var hasSearch = state.search.trim() !== '';
       var empty = App.el('div', 'empty-state');
-      var em = App.el('span', '', '🧾');
-      em.style.fontSize = '40px';
-      em.style.display = 'block';
-      empty.appendChild(em);
-      empty.appendChild(App.el('p', '', hasSearch
-        ? 'Keine Treffer für deine Suche.'
-        : 'Noch keine Buchungen in diesem Monat.'));
+      var emptyIcon = App.el('div', '');
+      emptyIcon.appendChild(App.icon('receipt-text', 40));
+      empty.appendChild(emptyIcon);
+      empty.appendChild(App.el('p', '', 'Noch keine Buchungen in diesem Monat.'));
       wrap.appendChild(empty);
       return;
     }
@@ -219,8 +185,14 @@
       g.items.forEach(function (entry) {
         var tx = entry.item;
         listGroup.appendChild(App.swipeToDelete(buildTxRow(tx), function () {
-          Store.deleteTransaction(tx.id);
-          App.toast('Buchung gelöscht');
+          var removed = Store.deleteTransaction(tx.id);
+          App.toast('Buchung gelöscht', removed ? {
+            actionText: 'Rückgängig',
+            onAction: function () {
+              Store.restoreTransaction(removed);
+              App.toast('Wiederhergestellt ✓');
+            }
+          } : undefined);
         }, { ariaLabel: 'Buchung löschen' }));
       });
       wrap.appendChild(listGroup);
@@ -238,8 +210,7 @@
       ? 'color-mix(in srgb, var(--green) 7%, var(--bg-card))'
       : 'color-mix(in srgb, var(--red) 7%, var(--bg-card))';
 
-    var icon = App.el('div', 'cat-icon', cat.emoji);
-    icon.style.background = cat.color + '2E';
+    var icon = App.catIcon(tx.category);
 
     var main = App.el('div', 'row-main');
     main.appendChild(App.el('div', 'row-title', tx.note || cat.label));
@@ -349,8 +320,9 @@
       App.catList(st.type).forEach(function (c) {
         var chip = App.el('button', 'cat-chip');
         chip.type = 'button';
-        var em = App.el('span', '', c.emoji);
-        em.style.fontSize = '20px';
+        var em = App.el('span', '');
+        em.style.color = c.color;
+        em.appendChild(App.icon(c.icon, 22));
         chip.appendChild(em);
         chip.appendChild(App.el('span', '', c.label));
         if (c.key === st.category) chip.classList.add('active');
@@ -492,9 +464,15 @@
           destructive: true
         }).then(function (ok) {
           if (!ok) return;
-          Store.deleteTransaction(tx.id);
+          var removed = Store.deleteTransaction(tx.id);
           App.closeSheet();
-          App.toast('Gelöscht');
+          App.toast('Gelöscht', removed ? {
+            actionText: 'Rückgängig',
+            onAction: function () {
+              Store.restoreTransaction(removed);
+              App.toast('Wiederhergestellt ✓');
+            }
+          } : undefined);
         });
       });
       content.appendChild(delBtn);

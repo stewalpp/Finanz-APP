@@ -228,7 +228,7 @@ button {
   background: var(--bg-input);
   color: var(--tint);
   flex-shrink: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s var(--ease-out), transform 0.45s var(--spring);
 }
 
 .icon-btn svg {
@@ -277,7 +277,7 @@ button {
   padding: 7px 0 5px;
   min-height: 50px;
   color: var(--text-3);
-  transition: color 0.15s ease;
+  transition: color 0.2s var(--ease-linear);
 }
 
 .tab-item svg {
@@ -323,7 +323,7 @@ button {
   justify-content: center;
   box-shadow: 0 6px 16px color-mix(in srgb, var(--tint) 42%, transparent),
               0 2px 6px rgba(0, 0, 0, 0.12);
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.45s var(--spring), opacity 0.2s var(--ease-out);
 }
 
 .fab svg {
@@ -346,7 +346,7 @@ button {
 
 .view {
   padding: 16px;
-  animation: view-in 120ms ease-out;
+  animation: view-in 120ms var(--ease-out);
 }
 
 @keyframes view-in {
@@ -397,7 +397,7 @@ button {
   align-items: center;
   justify-content: center;
   color: var(--text-3);
-  transition: opacity 0.15s ease, transform 0.18s cubic-bezier(0.3, 0.9, 0.4, 1);
+  transition: opacity 0.15s var(--ease-out), transform 0.4s var(--spring);
 }
 
 .info-btn:active {
@@ -478,7 +478,7 @@ button {
 /* Tappable stat tiles (open an explanation sheet) */
 .stat[role='button'] {
   cursor: pointer;
-  transition: transform 0.18s cubic-bezier(0.3, 0.9, 0.4, 1);
+  transition: transform 0.4s var(--spring);
 }
 
 .stat[role='button']:active {
@@ -513,7 +513,7 @@ button {
   width: 100%;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.1s ease;
+  transition: background-color 0.15s var(--ease-linear);
 }
 
 .list-row + .list-row {
@@ -561,7 +561,7 @@ button {
   user-select: none;
   -webkit-user-select: none;
   touch-action: pan-y;
-  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 0.45s var(--spring);
   will-change: transform;
 }
 
@@ -613,7 +613,7 @@ button {
   font-size: 18px;
   line-height: 1;
   flex-shrink: 0;
-  background: var(--bg-input); /* views override with category color + '2E' alpha */
+  background: var(--bg-input); /* App.catIcon overrides with the solid category colour */
 }
 
 /* --------------------------------------------------------------------------
@@ -684,7 +684,7 @@ button {
   font-weight: 600;
   text-align: center;
   line-height: 1.25;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.2s var(--ease-out), transform 0.45s var(--spring);
 }
 
 .btn:active {
@@ -742,7 +742,7 @@ button {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.18s var(--ease-linear), box-shadow 0.18s var(--ease-out);
 }
 
 .segment.active {
@@ -878,7 +878,7 @@ textarea.input {
   height: 31px;
   border-radius: 100px;
   background: var(--bg-input);
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s var(--ease-linear);
 }
 
 .switch-track::after {
@@ -891,7 +891,7 @@ textarea.input {
   border-radius: 50%;
   background: #FFFFFF;
   box-shadow: var(--shadow-knob);
-  transition: transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1);
+  transition: transform 0.35s var(--spring);
 }
 
 .switch input:checked + .switch-track {
@@ -932,7 +932,7 @@ textarea.input {
   text-align: center;
   color: var(--text);
   min-height: 58px;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.18s var(--ease-linear), border-color 0.18s var(--ease-linear);
 }
 
 .cat-chip > span:first-child {
@@ -974,7 +974,7 @@ textarea.input {
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.18s var(--ease-linear), color 0.18s var(--ease-linear);
 }
 
 .chip:active {
@@ -1001,8 +1001,12 @@ textarea.input {
 }
 
 .searchbar::before {
-  content: '🔍';
-  font-size: 14px;
+  content: '';
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.34-4.34'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
   opacity: 0.55;
   flex-shrink: 0;
 }
@@ -1054,7 +1058,7 @@ textarea.input {
   font-size: 19px;
   line-height: 1;
   flex-shrink: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s var(--ease-out), transform 0.45s var(--spring);
 }
 
 .month-nav-btn svg {
@@ -1249,7 +1253,7 @@ textarea.input {
   height: 100%;
   border-radius: 100px;
   background: var(--green);
-  transition: width 0.4s cubic-bezier(0.3, 0.9, 0.4, 1);
+  transition: width 0.5s var(--ease-in-out);
 }
 
 /* --------------------------------------------------------------------------
@@ -1293,7 +1297,7 @@ textarea.input {
   font-weight: 500;
   color: var(--tint);
   min-height: 34px;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s var(--ease-out);
 }
 
 .link-row:active {
@@ -1333,7 +1337,7 @@ textarea.input {
   inset: 0;
   z-index: 200;
   background: rgba(0, 0, 0, 0.4);
-  animation: backdrop-in 200ms ease-out;
+  animation: backdrop-in 0.25s var(--ease-linear);
 }
 
 .sheet {
@@ -1352,7 +1356,7 @@ textarea.input {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
-  animation: sheet-up 280ms cubic-bezier(0.32, 0.72, 0.3, 1);
+  animation: sheet-up 0.45s var(--spring-soft);
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
 }
 
@@ -1404,7 +1408,7 @@ textarea.input {
   font-weight: 600;
   line-height: 1;
   flex-shrink: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s var(--ease-out);
 }
 
 .sheet-close:active {
@@ -1424,7 +1428,7 @@ textarea.input {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  animation: backdrop-in 180ms ease-out;
+  animation: backdrop-in 0.2s var(--ease-linear);
 }
 
 .alert {
@@ -1435,7 +1439,7 @@ textarea.input {
   overflow: hidden;
   text-align: center;
   padding: 18px 18px 0;
-  animation: alert-in 220ms cubic-bezier(0.3, 1.2, 0.4, 1);
+  animation: alert-in 0.4s var(--spring);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }
 
@@ -1478,7 +1482,7 @@ textarea.input {
   min-height: 44px;
   font-size: 17px;
   color: var(--tint);
-  transition: background-color 0.1s ease;
+  transition: background-color 0.1s var(--ease-linear);
 }
 
 .alert-actions button + button {
@@ -1519,8 +1523,8 @@ textarea.input {
   overflow: hidden;
   text-overflow: ellipsis;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  animation: toast-in 240ms cubic-bezier(0.3, 1.1, 0.4, 1);
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  animation: toast-in 0.5s var(--spring);
+  transition: opacity 0.25s var(--ease-in), transform 0.25s var(--ease-in);
   pointer-events: none;
 }
 
@@ -1591,7 +1595,7 @@ textarea.input {
 /* Tactile, springy press feedback on buttons */
 .btn {
   border-radius: 14px;
-  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.3, 0.9, 0.4, 1);
+  transition: opacity 0.2s var(--ease-out), transform 0.45s var(--spring);
 }
 
 .btn:active {
@@ -1606,7 +1610,7 @@ textarea.input {
 
 /* Smoother view entrance: gentle rise + fade */
 .view {
-  animation: view-rise 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+  animation: view-rise 0.3s var(--ease-out);
 }
 
 @keyframes view-rise {
@@ -1652,7 +1656,7 @@ textarea.input {
   cursor: grabbing;
 }
 .sheet-handle {
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s var(--ease-linear);
 }
 .sheet-grab:active .sheet-handle {
   background: var(--text-3);
@@ -1662,15 +1666,15 @@ textarea.input {
 .cat-chip,
 .chip,
 .segment {
-  transition: background-color 0.18s ease, border-color 0.18s ease,
-              box-shadow 0.18s ease, transform 0.12s cubic-bezier(0.3, 0.9, 0.4, 1);
+  transition: background-color 0.18s var(--ease-linear), border-color 0.18s var(--ease-linear),
+              box-shadow 0.18s var(--ease-out), transform 0.45s var(--spring);
 }
 .cat-chip:active,
 .chip:active {
   transform: scale(0.94);
 }
 .cat-icon {
-  transition: transform 0.12s cubic-bezier(0.3, 0.9, 0.4, 1);
+  transition: transform 0.4s var(--spring);
 }
 .list-row:active .cat-icon {
   transform: scale(0.92);
@@ -1680,7 +1684,7 @@ textarea.input {
   transform: scale(0.9);
 }
 .fab {
-  transition: transform 0.18s cubic-bezier(0.3, 0.9, 0.4, 1), box-shadow 0.2s ease;
+  transition: transform 0.45s var(--spring), box-shadow 0.2s var(--ease-out);
 }
 .fab:active {
   transform: scale(0.9);
@@ -1689,7 +1693,7 @@ textarea.input {
 .view > .card,
 .view > .list-group,
 .view > .section-title {
-  animation: rise-soft 0.34s cubic-bezier(0.22, 0.7, 0.2, 1) both;
+  animation: rise-soft 0.34s var(--ease-out) both;
 }
 @keyframes rise-soft {
   from { opacity: 0; transform: translateY(10px); }
@@ -1716,7 +1720,7 @@ textarea.input {
   visibility: hidden;
   background: transparent !important;
   pointer-events: none;
-  transition: opacity 0.16s ease;
+  transition: opacity 0.16s var(--ease-linear);
 }
 
 .swipe-cell.revealing .swipe-action,
@@ -2085,7 +2089,7 @@ html.theme-dark body::before {
 .tab-item {
   border-radius: 21px;
   min-height: 52px;
-  transition: color 0.18s ease, background-color 0.18s ease, transform 0.15s cubic-bezier(0.3, 0.9, 0.4, 1);
+  transition: color 0.2s var(--ease-linear), background-color 0.2s var(--ease-linear), transform 0.45s var(--spring);
 }
 
 .tab-item.active {
@@ -2164,4 +2168,119 @@ html.theme-dark body::before {
   .fab {
     bottom: calc(108px + env(safe-area-inset-bottom));
   }
+}
+
+/* --------------------------------------------------------------------------
+   27. Apple HIG motion system — Spring / Linear / EaseIn / EaseOut
+   Curves match Core Animation's standard timing functions. The spring is a
+   damped oscillation (≈ SwiftUI spring, ~3% overshoot) via linear(), with a
+   bezier fallback for older engines. Usage rule:
+   EaseOut = element appears · EaseIn = element disappears ·
+   Linear = pure fades & colour changes · Spring = pressed/flicked by finger.
+   -------------------------------------------------------------------------- */
+:root {
+  --ease-linear: linear;
+  --ease-in:     cubic-bezier(0.42, 0, 1, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.58, 1);
+  --ease-in-out: cubic-bezier(0.42, 0, 0.58, 1);
+  --spring:      cubic-bezier(0.34, 1.36, 0.44, 1);  /* fallback: light overshoot */
+  --spring-soft: cubic-bezier(0.32, 0.72, 0, 1);     /* critically damped — sheets */
+}
+
+@supports (animation-timing-function: linear(0, 1)) {
+  :root {
+    --spring: linear(
+      0, 0.0541 4.5%, 0.1798 9.1%, 0.335 13.6%, 0.4922 18.2%, 0.635 22.7%,
+      0.755 27.3%, 0.8498 31.8%, 0.9204 36.4%, 0.9697 40.9%, 1.0017 45.5%,
+      1.0203 50%, 1.0292 54.5%, 1.0315 59.1%, 1.0298 63.6%, 1.0258 68.2%,
+      1.0209 72.7%, 1.0159 77.3%, 1.0114 81.8%, 1.0077 86.4%, 1.0047 90.9%,
+      1.0025 95.5%, 1
+    );
+  }
+}
+
+/* Press-down reacts instantly (fast EaseOut); the release then springs back
+   via each element's own --spring transition. */
+.btn:active, .fab:active, .chip:active, .cat-chip:active, .icon-btn:active,
+.month-nav-btn:active, .info-btn:active, .segment:active, .tab-item:active,
+.stat[role='button']:active {
+  transition-duration: 0.1s;
+  transition-timing-function: var(--ease-out);
+}
+.list-row:active .cat-icon {
+  transition-duration: 0.1s;
+  transition-timing-function: var(--ease-out);
+}
+
+/* Alerts & info popups: animated dismissal (EaseIn — accelerate away) */
+.alert-backdrop.closing {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease-linear);
+}
+.alert-backdrop.closing .alert {
+  animation: none;
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 0.18s var(--ease-in), transform 0.2s var(--ease-in);
+}
+
+/* --------------------------------------------------------------------------
+   28. Lucide icon system (App.icon / App.catIcon)
+   -------------------------------------------------------------------------- */
+.cat-icon { color: #fff; }
+.cat-icon svg { display: block; }
+.cat-chip .icon { display: block; margin: 0 auto; }
+.empty-state .icon { display: block; margin: 0 auto 10px; color: var(--text-3); }
+
+/* --------------------------------------------------------------------------
+   29. Toast with action button ("Rückgängig" after deleting)
+   -------------------------------------------------------------------------- */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toast .toast-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.toast.has-action {
+  pointer-events: auto;
+  padding-right: 8px;
+}
+.toast-action {
+  flex: 0 0 auto;
+  color: #0A84FF;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 6px 10px;
+  margin: -6px 0;
+  border-radius: 100px;
+  transition: background-color 0.15s var(--ease-linear);
+}
+.toast-action:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* --------------------------------------------------------------------------
+   30. Hide bottom chrome while the on-screen keyboard is up (html.kb-open
+   is set by core.js on focusin/focusout). Prevents the iOS effect where
+   position:fixed bars drift along when scrolling behind an open keyboard.
+   -------------------------------------------------------------------------- */
+.tab-bar {
+  transition: transform 0.3s var(--ease-in-out);
+}
+html.kb-open .tab-bar {
+  /* the floating bar sits above the bottom edge → push past its own height
+     plus that offset so it fully leaves the viewport */
+  transform: translateY(calc(110% + max(10px, env(safe-area-inset-bottom))));
+}
+html.kb-open .fab {
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
 }
