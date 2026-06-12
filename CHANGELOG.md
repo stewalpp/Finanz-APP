@@ -4,6 +4,13 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (achtzehnter Wurf)
+
+- **Swipe-Löschen Apple-typisch stabilisiert.** Nach links wischen öffnet rechts das rote
+  Löschen-Feld. Das Feld wird nur noch so breit gerendert wie die tatsächlich freigezogene
+  Fläche, damit es bei falscher Wischrichtung nicht mehr durchscheint.
+  SW-Cache `v32`.
+
 ## 2026-06-12 (siebzehnter Wurf)
 
 - **Persönlicher Ausgabenblick ergänzt.** Im Tab „Persönlich" zeigt die Überblick-Karte jetzt pro

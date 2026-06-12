@@ -171,6 +171,9 @@
 
     function setX(x) {
       curX = x;
+      var reveal = Math.min(actionW, Math.max(0, -x));
+      cell.style.setProperty('--swipe-reveal', reveal + 'px');
+      cell.classList.toggle('revealing', reveal > 0);
       rowEl.style.transform = x ? 'translateX(' + x + 'px)' : '';
     }
 
@@ -178,6 +181,7 @@
       open = false;
       cell.classList.remove('dragging');
       cell.classList.remove('open');
+      cell.classList.remove('revealing');
       setX(0);
       if (App._openSwipeClose === closeCell) App._openSwipeClose = null;
     }
