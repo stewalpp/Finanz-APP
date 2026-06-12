@@ -4,6 +4,12 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (siebzehnter Wurf)
+
+- **Persönlicher Ausgabenblick ergänzt.** Im Tab „Persönlich" zeigt die Überblick-Karte jetzt pro
+  Partner ein kompaktes Diagramm für Gespart vs. private Ausgaben des Monats.
+  SW-Cache `v31`.
+
 ## 2026-06-12 (sechzehnter Wurf)
 
 - **Monat nach Person reduziert.** Pro Person sind auf der Übersicht nur noch Einnahmen und

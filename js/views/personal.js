@@ -1,6 +1,6 @@
 /* js/views/personal.js — "Persönlich": per-person view (Gehalt, Fixkosten, private Ausgaben).
    Switch between the two partners; everything is scoped to the selected person and month. */
-/* global App, Store, Analysis, Views */
+/* global App, Store, Analysis, Views, Charts */
 (function () {
   'use strict';
 
@@ -104,6 +104,50 @@
     return row;
   }
 
+  function chartLegend(label, cents, color, tone) {
+    var row = App.el('div', 'personal-chart-legend-row');
+    var labelWrap = App.el('div', 'personal-chart-legend-label');
+    var dot = App.el('span', 'dot');
+    dot.style.background = color;
+    labelWrap.appendChild(dot);
+    labelWrap.appendChild(App.el('span', '', label));
+    row.appendChild(labelWrap);
+
+    var value = App.el('span', tone === 'saving' ? 'amount-saving' : 'amount-neg', App.fmtEUR(cents));
+    row.appendChild(value);
+    return row;
+  }
+
+  function buildPersonalChart(sum) {
+    var savings = Math.max(0, sum.savingsCents || 0);
+    var privateSpent = Math.max(0, sum.privateSpentCents || 0);
+    var total = savings + privateSpent;
+    var wrap = App.el('div', 'personal-chart');
+
+    if (total <= 0) {
+      wrap.appendChild(App.el('p', 'row-sub', 'Noch keine privaten Ausgaben oder Sparraten in diesem Monat.'));
+      return wrap;
+    }
+
+    var chart = App.el('div', 'personal-chart-donut');
+    Charts.donut(chart, [
+      { label: 'Gespart', value: savings, color: 'var(--teal)' },
+      { label: 'Private Ausgaben', value: privateSpent, color: 'var(--red)' }
+    ], {
+      size: 154,
+      stroke: 18,
+      centerTitle: App.fmtEUR(total),
+      centerSub: 'privat'
+    });
+    wrap.appendChild(chart);
+
+    var legend = App.el('div', 'personal-chart-legend');
+    legend.appendChild(chartLegend('Gespart', savings, 'var(--teal)', 'saving'));
+    legend.appendChild(chartLegend('Private Ausgaben', privateSpent, 'var(--red)', 'neg'));
+    wrap.appendChild(legend);
+    return wrap;
+  }
+
   function buildSummaryCard(sum) {
     var card = App.el('div', 'card');
     card.appendChild(App.cardHead('Überblick', function () {
@@ -149,6 +193,8 @@
     sub.style.marginTop = '2px';
     hero.appendChild(sub);
     card.appendChild(hero);
+
+    card.appendChild(buildPersonalChart(sum));
 
     card.appendChild(summaryLine('Gehalt & Einnahmen', sum.incomeCents, '+', 'pos'));
     card.appendChild(summaryLine('Gemeinsame Fixkosten (Anteil)', sum.fixedCents, '−', 'neg'));

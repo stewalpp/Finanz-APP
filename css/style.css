@@ -630,6 +630,13 @@ button {
   white-space: nowrap;
 }
 
+.amount-saving {
+  color: var(--teal);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .amount-neg.strong {
   color: var(--red);
 }
@@ -1139,6 +1146,57 @@ textarea.input {
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.personal-chart {
+  display: grid;
+  grid-template-columns: minmax(124px, 154px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 10px 0 12px;
+  border-top: 0.5px solid var(--sep);
+  border-bottom: 0.5px solid var(--sep);
+}
+
+.personal-chart-donut .cf-donut {
+  margin: 0 auto;
+}
+
+.personal-chart > .row-sub {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+}
+
+.personal-chart-legend {
+  min-width: 0;
+}
+
+.personal-chart-legend-row,
+.personal-chart-legend-label {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.personal-chart-legend-row {
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 14px;
+}
+
+.personal-chart-legend-label {
+  gap: 8px;
+  color: var(--text-2);
+}
+
+@media (max-width: 380px) {
+  .personal-chart {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
 }
 
 .tip-card {
