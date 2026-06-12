@@ -306,31 +306,40 @@
 
     const spent = sum.fixedCents + sum.privateRecurringCents + sum.nonMonthlyDueCents +
       sum.privateSpentCents + sum.sharedVariableCents;
-    const spentEl = App.el('div', 'amount-neg', '−' + App.fmtEUR(spent));
-    spentEl.style.fontWeight = '700';
-    spentEl.style.fontSize = '17px';
-    head.appendChild(spentEl);
+    const leftEl = App.el('div', sum.leftoverCents >= 0 ? 'amount-pos' : 'amount-neg',
+      App.fmtEUR(sum.leftoverCents));
+    leftEl.style.fontWeight = '700';
+    leftEl.style.fontSize = '17px';
+    head.appendChild(leftEl);
     wrap.appendChild(head);
 
     const rows = App.el('div');
     rows.style.marginTop = '6px';
     rows.appendChild(budgetLine('Einnahmen', sum.incomeCents, '+', 'pos', true));
-    rows.appendChild(budgetLine('Gemeinsame Fixkosten (Anteil)', sum.fixedCents, '−', 'neg', true));
-    if (sum.privateRecurringCents > 0) {
-      rows.appendChild(budgetLine('Private laufende Kosten', sum.privateRecurringCents, '−', 'neg', true));
-    }
-    if (sum.nonMonthlyDueCents > 0) {
-      rows.appendChild(budgetLine('Zusätzlich fällig', sum.nonMonthlyDueCents, '−', 'neg', true));
-    }
-    rows.appendChild(budgetLine('Private Ausgaben (gebucht)', sum.privateSpentCents, '−', 'neg', true));
-    if (sum.sharedVariableCents > 0) {
-      rows.appendChild(budgetLine('Gemeinsame Ausgaben (½)', sum.sharedVariableCents, '−', 'neg', true));
-    }
-    if (sum.savingsCents > 0) {
-      rows.appendChild(budgetLine('Gespart', sum.savingsCents, '−', 'saving', true));
-    }
     rows.appendChild(budgetLine('Bleibt', sum.leftoverCents, '', sum.leftoverCents >= 0 ? 'pos' : 'neg', true));
     wrap.appendChild(rows);
+
+    const details = App.el('details', 'person-month-details');
+    details.appendChild(App.el('summary', '', 'Details'));
+    const detailRows = App.el('div', 'person-detail-rows');
+
+    detailRows.appendChild(budgetLine('Kosten gesamt', spent, '−', 'neg', true));
+    detailRows.appendChild(budgetLine('Gemeinsame Fixkosten (Anteil)', sum.fixedCents, '−', 'neg', true));
+    if (sum.privateRecurringCents > 0) {
+      detailRows.appendChild(budgetLine('Private laufende Kosten', sum.privateRecurringCents, '−', 'neg', true));
+    }
+    if (sum.nonMonthlyDueCents > 0) {
+      detailRows.appendChild(budgetLine('Zusätzlich fällig', sum.nonMonthlyDueCents, '−', 'neg', true));
+    }
+    detailRows.appendChild(budgetLine('Private Ausgaben (gebucht)', sum.privateSpentCents, '−', 'neg', true));
+    if (sum.sharedVariableCents > 0) {
+      detailRows.appendChild(budgetLine('Gemeinsame Ausgaben (½)', sum.sharedVariableCents, '−', 'neg', true));
+    }
+    if (sum.savingsCents > 0) {
+      detailRows.appendChild(budgetLine('Gespart', sum.savingsCents, '−', 'saving', true));
+    }
+    details.appendChild(detailRows);
+    wrap.appendChild(details);
     return wrap;
   }
 

@@ -4,6 +4,13 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (sechzehnter Wurf)
+
+- **Monat nach Person reduziert.** Pro Person sind auf der Übersicht nur noch Einnahmen und
+  Bleibt direkt sichtbar; Kosten, Sparen und gemeinsame/private Details liegen im aufklappbaren
+  Detailbereich.
+  SW-Cache `v30`.
+
 ## 2026-06-12 (fünfzehnter Wurf)
 
 - **Rechts-Swipe komplett ignoriert.** Geschlossene Buchungszeilen starten nun nur noch bei einer
