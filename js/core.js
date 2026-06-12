@@ -153,12 +153,12 @@
     return node;
   };
 
-  // Wrap a list row with a right-swipe delete action. The row keeps its own click
-  // handlers; swiping right reveals "Löschen", and a long swipe deletes directly.
+  // Wrap a list row with the usual iOS delete action. The row keeps its own click
+  // handlers; swiping left reveals "Löschen", and a long left swipe deletes directly.
   App.swipeToDelete = function (rowEl, onDelete, opts) {
     opts = opts || {};
     var actionW = opts.width || 88;
-    var cell = App.el('div', 'swipe-cell swipe-delete-right');
+    var cell = App.el('div', 'swipe-cell');
     var action = App.el('button', 'swipe-action', opts.label || 'Löschen');
     action.type = 'button';
     action.setAttribute('aria-label', opts.ariaLabel || 'Eintrag löschen');
@@ -186,7 +186,7 @@
       open = true;
       cell.classList.remove('dragging');
       cell.classList.add('open');
-      setX(actionW);
+      setX(-actionW);
       if (App._openSwipeClose && App._openSwipeClose !== closeCell) App._openSwipeClose();
       App._openSwipeClose = closeCell;
     }
@@ -218,8 +218,8 @@
       }
       if (e.cancelable) e.preventDefault();
       var x = base + dx;
-      if (x < 0) x = x * 0.15;
-      if (x > actionW) x = actionW + (x - actionW) * 0.35;
+      if (x > 0) x = 0;
+      if (x < -actionW) x = -actionW + (x + actionW) * 0.35;
       setX(x);
     }
 
@@ -228,8 +228,8 @@
         cell.classList.remove('dragging');
         suppressClick = true;
         setTimeout(function () { suppressClick = false; }, 80);
-        if (curX > actionW * 1.45) doDelete();
-        else if (curX > actionW * 0.45) openCell();
+        if (curX < -actionW * 1.45) doDelete();
+        else if (curX < -actionW * 0.45) openCell();
         else closeCell();
       }
       end();
@@ -239,7 +239,7 @@
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       startX = e.clientX;
       startY = e.clientY;
-      base = open ? actionW : 0;
+      base = open ? -actionW : 0;
       decided = false;
       dragging = false;
       rowEl.addEventListener('pointermove', onMove);

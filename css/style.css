@@ -551,11 +551,6 @@ button {
   cursor: pointer;
 }
 
-.swipe-delete-right .swipe-action {
-  left: 0;
-  right: auto;
-}
-
 .swipe-cell > .list-row {
   position: relative;
   background: var(--bg-card);

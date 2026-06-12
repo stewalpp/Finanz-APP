@@ -4,6 +4,12 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-12 (vierzehnter Wurf)
+
+- **Swipe-Löschen auf iPhone-Richtung korrigiert.** Löschen öffnet sich jetzt nur noch beim
+  Swipe nach links; ein Swipe nach rechts zieht die Zeile nicht mehr auf den Löschen-Button.
+  SW-Cache `v28`.
+
 ## 2026-06-12 (dreizehnter Wurf)
 
 - **Dashboard und Buchungen klarer beschriftet.** Das Dashboard zeigt beim Kreisdiagramm wieder
