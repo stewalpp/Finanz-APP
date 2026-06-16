@@ -588,7 +588,7 @@
 
   function buildFixedCostChartCard(rules, mode) {
     const isAnnual = mode === 'annual';
-    const title = isAnnual ? 'Gemeinsame Jahres-/Quartalskosten' : 'Gemeinsame monatliche Fixkosten';
+    const title = isAnnual ? 'Gemeinsame Jahreskosten' : 'Gemeinsame monatliche Fixkosten';
     const card = App.el('div', 'card');
     card.appendChild(App.cardHead(title, function () {
       return App.infoContent([

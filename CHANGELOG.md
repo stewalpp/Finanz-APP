@@ -4,6 +4,11 @@ Alle nennenswerten Änderungen an „Unsere Finanzen". Neueste zuerst.
 (Die `CACHE`-Version in `sw.js` wird bei Asset-Änderungen erhöht — sie ist der technische
 Versionsmarker für installierte PWAs.)
 
+## 2026-06-16 (sechsundzwanzigster Wurf)
+
+- **Dashboard-Beschriftung vereinfacht.** Das zweite Fixkosten-Diagramm heißt jetzt nur noch
+  „Gemeinsame Jahreskosten". SW-Cache `v41`.
+
 ## 2026-06-12 (fünfundzwanzigster Wurf)
 
 - **Sonderkosten optisch hervorgehoben.** Die Sonderkosten-Karte im Tab „Persönlich" hat jetzt
